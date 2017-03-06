@@ -434,47 +434,47 @@ setMethod(
     return(as)
 })
 ##########################################################################
+
+# ---------------------------------------------------------------------------- #
+# writeAS
 setGeneric (
   name = "writeAS",
-  def = function(as, output.dir="as")
-  standardGeneric("writeAS"))
-##########################################################################
+  def  = function(as, output.dir="as")
+  standardGeneric( "writeAS" ) )
+
 setMethod(
   f = "writeAS",
   signature = "ASpliAS",
-  definition =function(as, output.dir="as")
-  {
-    currentDir <- getwd()
-      outputDir <- paste(currentDir, output.dir, sep = "/")       
-      exonsDir <- paste(outputDir, "exons", sep = "/")       
-      intronsDir <- paste(outputDir, "introns", sep = "/")
-      junctionsDir <- paste(outputDir, "junctions", sep = "/")                     	     	     	     	    
+  definition = function( as, output.dir="as") {
     
-    if (!file.exists(output.dir))
-    {
-      dir.create(outputDir)
-      dir.create(exonsDir)
-      dir.create(intronsDir)
-      dir.create(junctionsDir)
+    # Creates output folder structure
+    exonsFilePSI     <- file.path( output.dir, "exons", "exon.altPSI.tab" )       
+    exonsFileES      <- file.path( output.dir, "exons", "exon.altES.tab" )       
+    intronsFile      <- file.path( output.dir, "introns", "intron.irPIR.tab" )
+    junctionsFilePIR <- file.path( output.dir, "junctions", "junction.PIR.tab" )                     	     	     	     	    
+    junctionsFilePSI <- file.path( output.dir, "junctions", "junction.PSI.tab" )
+    asDiscoverFile   <- file.path( output.dir, "as_discovery.tab" )
+    
+    file.exists( output.dir ) || dir.create( output.dir )
+    for ( folder in unique( lapply( c( exonsFilePSI, exonsFileES, intronsFile, 
+                junctionsFilePIR, junctionsFilePSI ), dirname ) ) ) {
+      dir.create( folder )
     }
-    ################ EXONS ####################################
-    file <- paste(exonsDir, "exon.altPSI.tab", sep="/")
-    write.table(altPSI(as), file, sep="\t", quote=FALSE, col.names=NA)
-    file <- paste(exonsDir, "exon.altES.tab", sep="/")
-    write.table(esPSI(as), file, sep="\t", quote=FALSE, col.names=NA)
-    ################ INTRONS ##################################
-    file <- paste(intronsDir, "intron.irPIR.tab", sep="/")
-    write.table(irPIR(as), file, sep="\t", quote=FALSE, col.names=NA)
-    ################ Junctions ################################
-    file <- paste(junctionsDir, "junction.PIR.tab", sep="/")
-    write.table(as@junctionsPIR, file, sep="\t", quote=FALSE, col.names=NA)
-    file <- paste(junctionsDir, "junction.PSI.tab", sep="/")
-    write.table(junctionsPSI(as), file, sep="\t", quote=FALSE, col.names=NA)
-    ################ ALL ######################################
-    currentDir=getwd()
-    file <- paste(outputDir, "as_discovery.tab", sep="/")
-    write.table(joint(as), file, sep="\t", quote=FALSE, col.names=NA)
-    }
+
+    # Export exons
+    write.table( altPSI(as), exonsFilePSI, sep="\t", quote=FALSE, col.names=NA)
+    write.table( esPSI(as), exonsFileES, sep="\t", quote=FALSE, col.names=NA)
+    
+    # Export Introns
+    write.table( irPIR(as), intronsFile, sep="\t", quote=FALSE, col.names=NA)
+    
+    # Export Junctions
+    write.table(junctionsPIR(as), junctionsFilePIR, sep="\t", quote=FALSE, col.names=NA)
+    write.table(junctionsPSI(as), junctionsFilePSI, sep="\t", quote=FALSE, col.names=NA)
+
+    # Export AS discovery table
+    write.table( joint(as), asDiscoverFile, sep="\t", quote=FALSE, col.names=NA)
+  }
 )
 ##########################################################################
 setGeneric (
@@ -644,48 +644,51 @@ setMethod(
     return(du)
   }
 )
-##########################################################################
+
+# ---------------------------------------------------------------------------- #
+# writeDU
 setGeneric (
   name = "writeDU",
-  def =function(du, output.dir="du")
-  standardGeneric("writeDU"))
-##########################################################################
+  def = function( du, output.dir="du" )
+  standardGeneric( "writeDU" ) )
+
 setMethod(
   f = "writeDU",
   signature = "ASpliDU",
-  definition =function(du, output.dir="du")
-  {
-    currentDir <- getwd()
-    outputDir <- paste(currentDir, output.dir, sep = "/")       
-    genesDir <- paste(outputDir, "genes", sep = "/")       
-    exonsDir <- paste(outputDir, "exons", sep = "/")       
-    intronsDir <- paste(outputDir, "introns", sep = "/")
-    junctionsDir <- paste(outputDir, "junctions", sep = "/")                                   	     	    
-    if (!file.exists(output.dir))
-    {
-      dir.create(outputDir)
-      dir.create(genesDir)
-      dir.create(exonsDir)
-      dir.create(intronsDir)
-      dir.create(junctionsDir)
-      }
-      ################ GENES ####################################
-    file <- paste(genesDir, "gene.de.tab", sep="/")
-    write.table(du@genes, file, sep="\t", quote=FALSE, col.names=NA)
-    ################ EXONS ###################################
+  definition = function( du, output.dir="du" ) {
+    
+    # Creates outut folder structure                                           
+    genesFile     <- file.path( output.dir, "genes","gene.de.tab" )       
+    exonsFile     <- file.path( output.dir, "exons", "exon.du.tab")       
+    intronsFile   <- file.path( output.dir, "introns", "intron.du.tab")
+    junctionsFile <- file.path( output.dir, "junctions", "junction.du.tab")                                   	     	    
+    
+    file.exists( output.dir ) || dir.create( output.dir )
+    for (filename in c( genesFile, exonsFile, intronsFile, junctionsFile ) ) {
+      dir.create( dirname( filename ) )
+    }
+    
+    # Export Genes  
+    write.table( genesDE( du ), genesFile, sep = "\t", quote = FALSE, 
+        col.names = NA )
+      
+    # Export Exons
     exonBins <- binsDU(du)[binsDU(du)$feature == "E",]
     exonBins <- exonBins[exonBins$event !="IR",]
-    file <- paste(exonsDir, "exon.du.tab", sep="/")
-    write.table(exonBins, file, sep="\t", quote=FALSE, col.names=NA)
-    ################ INTRONS ##################################
-    intronBins<-rbind(binsDU(du)[binsDU(du)$feature == "I",], 
-                      binsDU(du)[binsDU(du)$feature == "Io",],
-                      binsDU(du)[binsDU(du)$event == "IR",])
-    file <- paste(intronsDir, "intron.du.tab", sep="/")
-    write.table(intronBins, file, sep="\t", quote=FALSE, col.names=NA)
-    ################ Junctions ##################################
-    file <- paste(junctionsDir, "junction.du.tab", sep="/")
-    write.table(junctionsDU(du), file, sep="\t", quote=FALSE, col.names=NA)
+    write.table( exonBins, exonsFile, sep="\t", quote=FALSE, col.names=NA)
+      
+  
+    # Export Introns 
+    intronBins <- rbind( binsDU(du)[binsDU(du)$feature == "I" ,], 
+                         binsDU(du)[binsDU(du)$feature == "Io",],
+                         binsDU(du)[binsDU(du)$event   == "IR",])
+    write.table( intronBins, intronsFile, sep = "\t", quote = FALSE, 
+                 col.names = NA )
+      
+    # Export Junctions
+    write.table( junctionsDU( du ), junctionsFile, sep = "\t", quote = FALSE, 
+                 col.names=NA )
   }
 )
-##########################################################################
+# ---------------------------------------------------------------------------- #
+

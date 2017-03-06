@@ -249,129 +249,129 @@ setMethod('show', 'ASpliDU',
 #Write methods
 setGeneric (
   name =  "writeCounts",
-  def = function(counts, output.dir="counts")
-    standardGeneric("writeCounts"))
+  def = function( counts, output.dir="counts" )
+    standardGeneric( "writeCounts" ) )
 ##########################################################################
 setMethod(
   f = "writeCounts",
   signature = "ASpliCounts",
-  definition =function(counts, output.dir="counts")
-  {
-    currentDir <- getwd()
-    outputDir <- paste(currentDir, output.dir, sep = "/")       
-    genesDir <- paste(outputDir, "genes", sep = "/")       
-    exonsDir <- paste(outputDir, "exons", sep = "/")       
-    intronsDir <- paste(outputDir, "introns", sep = "/")
-    junctionsDir <- paste(outputDir, "junctions", sep = "/")              	     	     	     	     	    
+  definition = function( counts, output.dir = "counts" ) {
+    genesFile <- file.path( output.dir, "genes", "gene.counts.tab" )       
+    exonsFile <- file.path( output.dir, "exons", "exon.counts.tab")       
+    intronsFile    <- file.path( output.dir, "introns", "intron.counts.tab")
+    intronsIE1File <- file.path( output.dir, "introns", "e1i.counts.tab")
+    intronsEI2File <- file.path( output.dir, "introns", "ie2.counts.tab")
+    junctionsFile <- file.path( output.dir, "junctions", "junction.counts.tab")              	     	     	     	     	    
     
-    if (!file.exists(output.dir))
-    {
-      dir.create(outputDir)
-      dir.create(genesDir)
-      dir.create(exonsDir)
-      dir.create(intronsDir)
-      dir.create(junctionsDir)
+    file.exists( output.dir ) || dir.create ( output.dir )
+    for (folder in unique( lapply( c(genesFile, exonsFile, intronsIE1File, 
+                intronsEI2File, junctionsFile ), 
+            dirname ))) {
+      dir.create( folder )
     }
+
+    # Export genes 
+    write.table(countsg(counts), genesFile, sep="\t", quote=FALSE, col.names=NA)
+
+    # Export exons
+    ec <- countsb(counts)[ countsb(counts)$feature=="E",]
+    ec <- ec[ ec$event != "IR", ]
+    ec <- ec[ ec$event != "IR*", ]
+    write.table( ec, exonsFile, sep="\t", quote=FALSE, col.names=NA)
+
+    # Export introns
+    ic <- rbind( countsb( counts )[ countsb( counts )$feature == "I",], 
+                 countsb( counts )[ countsb( counts )$feature == "Io",], 
+                 countsb( counts )[ countsb( counts )$event == "IR",],
+                 countsb( counts )[ countsb( counts )$event == "IR*",])
+    write.table(ic, intronsFile, sep="\t", quote=FALSE, col.names=NA)
+    write.table(countse1i(counts), intronsIE1File, sep="\t", quote=FALSE, 
+        col.names=NA)
+    write.table(countsie2(counts), intronsEI2File, sep="\t", quote=FALSE, 
+        col.names=NA)
     
-    file <- paste(genesDir, "gene.counts.tab", sep="/")
-    write.table(countsg(counts), file, sep="\t", quote=FALSE, col.names=NA)
-    ##########################################################################
-    ec <- countsb(counts)[countsb(counts)$feature=="E",]
-    ec <- ec[ec$event != "IR",]
-    ec <- ec[ec$event != "IR*",]
-    file <- paste(exonsDir, "exon.counts.tab", sep="/")
-    write.table(ec, file, sep="\t", quote=FALSE, col.names=NA)
-    ################ INTRONS ##################################
-    file <- paste(intronsDir, "intron.counts.tab", sep="/")
-    ic <- rbind(countsb(counts)[countsb(counts)$feature == "I",], 
-                countsb(counts)[countsb(counts)$feature == "Io",], 
-                countsb(counts)[countsb(counts)$event == "IR",],
-                countsb(counts)[countsb(counts)$event == "IR*",])
-    write.table(ic, file, sep="\t", quote=FALSE, col.names=NA)
-    file <- paste(intronsDir, "e1i.counts.tab", sep="/")
-    write.table(countse1i(counts), file, sep="\t", quote=FALSE, col.names=NA)
-    file <- paste(intronsDir, "ie2.counts.tab", sep="/")
-    write.table(countsie2(counts), file, sep="\t", quote=FALSE, col.names=NA)
-    file <- paste(junctionsDir, "junction.counts.tab", sep="/" )
-    write.table(countsj(counts), file, sep="\t", quote=FALSE,  col.names=NA)
+    # Export junctions 
+    write.table(countsj(counts), junctionsFile, sep="\t", quote=FALSE, 
+        col.names=NA)
   }
 )
 ##########################################################################
+
+# ---------------------------------------------------------------------------- # 
+# writeRds
 setGeneric (
   name = "writeRds",
   def = function(counts, output.dir="rds")
-    standardGeneric("writeRds"))
-##########################################################################
+    standardGeneric( "writeRds" ) )
+
 setMethod(
   f = "writeRds",
   signature = "ASpliCounts",
-  definition =function(counts, output.dir="rds")
-  {
-    currentDir <- getwd()
-    if (file.exists(output.dir))
-    {
-      outputDir <- paste(currentDir, output.dir, sep = "/")       
-      genesDir <- paste(outputDir, "genes", sep = "/")       
-      exonsDir <- paste(outputDir, "exons", sep = "/")       
-      intronsDir <- paste(outputDir, "introns", sep = "/")
-    }
-    else 
-    {
-      outputDir <- paste(currentDir, output.dir, sep = "/")       
-      genesDir <- paste(outputDir, "genes", sep = "/")       
-      exonsDir <- paste(outputDir, "exons", sep = "/")	     
-      intronsDir <- paste(outputDir, "introns", sep = "/")
-      dir.create(outputDir)
-      dir.create(genesDir)
-      dir.create(exonsDir)
-      dir.create(intronsDir)
-    }
-    file <- paste(genesDir, "gene.rd.tab", sep="/")
-    write.table(rdsg(counts), file, sep="\t", quote=FALSE, col.names=NA)
-    ################ EXONS ####################################
+  definition =function( counts, output.dir="rds") {
+    
+    # Create output folder structure
+    file.exists( output.dir ) || dir.create( output.dir )
+    
+    genesFile   <- file.path( output.dir, "genes", "gene.rd.tab" )       
+    exonsFile   <- file.path( output.dir, "exons", "exon.rd.tab" )       
+    intronsFile <- file.path( output.dir, "introns", "intron.rd.tab" )
+
+    # Export gene read densities
+    write.table( rdsg(counts), genesFile, sep="\t", quote = FALSE, 
+        col.names = NA )
+
+    # Export exon read densities
     erd <- rdsb(counts)[rdsb(counts)$feature == "E",]
     erd <- erd[erd$event != "IR",]
     erd <- erd[erd$event != "IR*",]
-    file <- paste(exonsDir, "exon.rd.tab", sep="/")
-    write.table(erd, file, sep="\t", quote=FALSE, col.names=NA)
-    ################ INTRONS ##################################
-    file <- paste(intronsDir, "intron.rd.tab", sep="/")
-    ird <- rbind(rdsb(counts)[rdsb(counts)$feature == "I",], 
-                 rdsb(counts)[rdsb(counts)$feature == "Io",], 
-                 rdsb(counts)[rdsb(counts)$eventJ == "IR",])
-    write.table(ird, file, sep="\t", quote=FALSE, col.names=NA)
+    write.table( erd, exonsFile, sep="\t", quote = FALSE, col.names = NA )
+
+    # Export Intron read densities
+    ird <- rbind( rdsb(counts)[rdsb(counts)$feature == "I",], 
+                  rdsb(counts)[rdsb(counts)$feature == "Io",], 
+                  rdsb(counts)[rdsb(counts)$eventJ  == "IR",])
+    write.table( ird, intronsFile, sep="\t", quote = FALSE, col.names = NA )
   }
 )
-##########################################################################
+# End of writeRds
+# ---------------------------------------------------------------------------- # 
+
+
+# ---------------------------------------------------------------------------- # 
+# writeAll
 setGeneric (
   name = "writeAll",
-  def = function(counts, du, as, output.dir="output")
-    standardGeneric("writeAll"))
-##########################################################################
+  def = function( counts, du, as, output.dir="output")
+    standardGeneric("writeAll") )
+
 setMethod(
   f= "writeAll",
-  definition=function(counts, du, as, output.dir="output")
-  {
-    writeCounts(counts, output.dir)
-    writeRds(counts, output.dir)
-    writeAS(as, output.dir)
-    writeDU(du, output.dir)
-    #armo el df
-    currentDir <- getwd()
-    colnames(as@irPIR) <- colnames(as@altPSI)
-    conP <- rbind(altPSI(as), 
-                  esPSI(as),
-                  irPIR(as))
-    ii <- match(rownames(binsDU(du)), row.names(conP))
-    bins.join <- data.frame(binsDU(du), conP[ii,])
+  definition=function( counts, du, as, output.dir="output" ) {
+    
+    # Exports Counts, read densities, AS y DU
+    suppressWarnings( writeCounts( counts, output.dir ) )
+    suppressWarnings( writeRds( counts, output.dir ) )
+    suppressWarnings( writeAS( as, output.dir ) )
+    suppressWarnings( writeDU( du, output.dir ) )
+    
+    # Export as+du table
+    # TODO: write a setter for irPIR and others slots
+    colnames( as@irPIR ) <- colnames( altPSI( as ) )
+    conP <- rbind( altPSI(as), esPSI(as), irPIR(as) )
+    ii   <- match( rownames( binsDU( du ) ), row.names(conP) )
+    bins.join <- data.frame( binsDU(du), conP[ii,])
     bins.join$feature <- NULL
     bins.join$event.1 <- NULL
-    summary <- bins.join[,c(1:11) ]
-    summary <- cbind(summary,bins.join[,colnames(bins.join)==levels(group)])
-    currentDir <- getwd()
-    outputDir <- paste(currentDir, output.dir, sep = "/")       
-    file <- paste(outputDir, "bins_du_psi_pir.tab", sep="/")
-    write.table(bins.join, file, sep="\t", quote=FALSE, col.names=NA)  
-    file<-paste(outputDir, "summary.tab", sep="/")
-    write.table(summary, file, sep="\t", quote=FALSE, col.names=NA)  
+    file <- file.path( output.dir, "bins_du_psi_pir.tab" )
+    write.table( bins.join, file, sep="\t", quote=FALSE, col.names=NA )
+    
+    # Export Summary
+    group <- colnames(countsg(counts))[ 8 : ncol( countsg(counts) ) ]
+    summary <- bins.join[ , c(1:11) ]
+    summary <- cbind( summary, bins.join[ , colnames( bins.join ) == levels( group ) ] )
+    file <- file.path( output.dir, "summary.tab")
+    write.table( summary, file, sep="\t", quote=FALSE, col.names = NA)  
+    
   })
+# End of writeAll
+# ---------------------------------------------------------------------------- # 
