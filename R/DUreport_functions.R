@@ -1,50 +1,57 @@
-.filterByReads <-
-    function(df0, targets, min, type) 
-    {
-      a <- table(targets$condition) 
-      start <- ncol(df0)-sum(a)+1
-      cn <- colnames(df0)[start:ncol(df0)]
-      colnames(df0)[start:ncol(df0)] <- as.character(targets$condition)
-      #independiente del numero de condiciones
-      list <- matrix(unlist(
-        lapply(
-          unique(targets$condition), 
-          function(x) rowMeans(df0[,colnames(df0) == x]) >= min  )),  
-        nrow=nrow(df0), 
-        byrow=FALSE)
-      colnames(df0)[start:ncol(df0)] <- cn
-      if (type == "all"){
-        df=df0[rowSums(list)==ncol(list),]
-      }else {
-        df=df0[rowSums(list)>0,]
-      }
-      return (df)
-    }
-#########################################################################
-.filterByRdGen <-
-  function(df0, targets, min, type) 
-  {
-    a <- table(targets$condition) 
-    start <- ncol(df0)-sum(a)+1
-    frd <- df0[,start:ncol(df0)]/df0$effective_length
-    colnames(frd) <- targets$condition
-    ######################  
-    list <- matrix(unlist(
-      lapply(unique(colnames(frd)), 
-              function(x) rowMeans(frd[,colnames(frd) == x])  >= min )),  
-      nrow = nrow(frd), 
-      byrow = FALSE)
-    #######################
-    #keeps those genes which ave rd > min in any condition
-    if (type=="any")  { 
-      ii <- rowSums(list)>0  
-      df <- df0[ii,]
-    }else  { 
-      ii <- rowSums(list)==ncol(list)
-      df <- df0[ii,]
-    }
-    return (df)
+.filterByReads <- function( df0, targets, min, type, pair = NULL ) {
+
+  # subset a working data frame
+  end <- ncol( df0 )
+  start <- end - length ( targets$condition )  + 1
+  cropped <- df0 [ , start : end ]
+  colnames(cropped) <- as.character( targets$condition )
+  
+  # Modify working dataframe with pair being compared
+  if ( is.null( pair )) {
+    pair <- as.character( unique( targets$condition ) )
   }
+  cropped <- cropped[ , colnames( cropped ) %in% pair ]
+  
+  # Calculates row means for conditions being compared
+  list <- matrix( unlist( 
+    lapply( pair, function( x ) {
+          rowMeans( cropped[ , colnames( cropped ) == x ] ) >= min } ) ),  
+    nrow=nrow(cropped), 
+    byrow = FALSE )
+
+  # Filter original gene counts 
+  if (type == "all"){
+    df=df0[ rowSums(list) == length( pair ), ]
+  } else {
+    df=df0[ rowSums(list) > 0,]
+  } 
+  
+  return ( df )
+}
+#########################################################################
+.filterByRdGen <- function(df0, targets, min, type) {
+    
+  a <- table( targets$condition ) 
+  start <- ncol(df0)-sum(a)+1
+  frd <- df0[,start:ncol(df0)]/df0$effective_length
+  colnames(frd) <- targets$condition
+  ######################  
+  list <- matrix(unlist(
+    lapply(unique(colnames(frd)), 
+            function(x) rowMeans(frd[,colnames(frd) == x])  >= min )),  
+    nrow = nrow(frd), 
+    byrow = FALSE)
+  #######################
+  #keeps those genes which ave rd > min in any condition
+  if (type=="any")  { 
+    ii <- rowSums(list)>0  
+    df <- df0[ii,]
+  }else  { 
+    ii <- rowSums(list)==ncol(list)
+    df <- df0[ii,]
+  }
+  return (df)
+}
 #####################################################################
 .genesDE <-
   function(df, targets, pair, group)
