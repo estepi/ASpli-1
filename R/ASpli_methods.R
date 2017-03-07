@@ -301,7 +301,9 @@ setMethod(
     empty[int,] <- dfe1e2
     dmerge <- cbind(dffinal, empty); 
     dmerge$jbin <- NULL
-    rownames(dmerge) <- names(intranges)
+    
+    dmerge <-  dmerge[ names(intranges) , ]
+    
 ##########################################################################    
     intPIR <- function(x){
             x[is.na(x)] <- 0 # we have to remove NAs
