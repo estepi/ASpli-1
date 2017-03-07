@@ -183,7 +183,7 @@
   function(df, targets, pair)
   { 
     countsSt <- ncol(df)-nrow(targets)+1
-    colData <- data.frame(condition=targets[,2], row.names=row.names(targets))
+    colData <- data.frame(condition=targets$condition, row.names=row.names(targets))
     #########################################################
     dds <- DESeqDataSetFromMatrix(countData = df[,countsSt:ncol(df)],
                                   colData = colData,
