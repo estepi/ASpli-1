@@ -151,58 +151,68 @@ setMethod(
     return(counts)
   }
 )
-##############################################################################
+
+# readCounts
 setGeneric (
   name = "readCounts",
   def = function(features, bam, cores=NULL, l, maxISize, minAnchor=NULL)
-  standardGeneric("readCounts"))
-##########################################################################
+  standardGeneric("readCounts") )
+
 setMethod(
   f = "readCounts",
   signature = "ASpliFeatures",
-  definition = function(features, bam, cores=NULL, l, maxISize, minAnchor=NULL)
-  {
-      counts <- new(Class="ASpliCounts")
-      if(is.null(minAnchor)){minAnchor=10}
-      minA <- round(minAnchor*l/100)
-      gene.hits <- .counterGenes(bam, featuresg(features), cores)
-      message("read summarization by gene completed")
-      counts@gene.counts <- gene.hits
-      ####################################################################
-      #exons
-      bins <- featuresb(features)
-      totCounts <- .counterBin(bam, bins, gene.hits, cores)
-      message("read summarization by bin completed")
-      ####################################################################
-      #introns
-      introns <- c(bins[bins@elementMetadata$feature == "I"], 
-                 bins[bins@elementMetadata$feature == "Io" ],
-                 bins[bins@elementMetadata$eventJ=="IR"])
-      ####################################################################
-      e1i <- introns
-      start(e1i) <- start(introns)-(l-minAnchor)
-      end(e1i) <- start(introns)+(l-minAnchor)
-      e1i.hits <- .counterJbin(bam, e1i, gene.hits, cores, l)
-      message("read summarization by ei1 region completed")
-      #####################################################################
-      ie2<-introns
-      start(ie2) <- end(introns)-(l-minA)
-      end(ie2) <- end(introns)+(l-minA)
-      ie2.hits <- .counterJbin(bam, ie2, gene.hits, cores, l)
-      message("read summarization by ie2 region completed")
-      ####################################################################
-       #junctions
-      junction.hits = .counterJunctions(features, bam, cores, maxISize)
-      message("junction summarization completed")
-      #####################################################################
-      counts@gene.counts <- gene.hits
-      counts@exon.intron.counts <- totCounts
-      counts@junction.counts <- junction.hits 
-      counts@e1i.counts <- e1i.hits  
-      counts@ie2.counts <- ie2.hits
-      counts <- rds(counts, targets)
-      return(counts)
-})
+  definition = function( features, bam, cores=NULL, targets, l, maxISize, 
+      minAnchor = 10 ) {
+      
+    counts <- new(Class="ASpliCounts")
+    
+    minA <- round( minAnchor * l / 100 )
+    
+    # Coutn Genes
+    gene.hits <- .counterGenes( bam, featuresg( features ), cores )
+    message("Read summarization by gene completed")
+    counts@gene.counts <- gene.hits
+
+    # Count exons 
+    bins <- featuresb( features )
+    totCounts <- .counterBin( bam, bins, gene.hits, cores )
+    message( "Read summarization by bin completed" )
+    
+    # Count introns
+    introns <- c( bins[ mcols(bins)$feature == "I" ], 
+                  bins[ mcols(bins)$feature == "Io"],
+                  bins[ mcols(bins)$eventJ  == "IR"])
+
+    # Count exon1 - intron regions
+    e1i <- introns
+    start(e1i) <- start(introns)-( l - minAnchor )
+    end(e1i)   <- start(introns)+( l - minAnchor )
+    e1i.hits   <- .counterJbin(bam, e1i, gene.hits, cores, l)
+    message("Read summarization by ei1 region completed")
+    
+    # Count intron - exon2 regions
+    ie2 <- introns
+    start( ie2 ) <- end( introns ) - ( l - minA )
+    end( ie2 ) <- end( introns ) + ( l - minA )
+    ie2.hits <- .counterJbin( bam, ie2, gene.hits, cores, l )
+    message("Read summarization by ie2 region completed")
+    
+    # Count junctions
+    junction.hits = .counterJunctions( features, bam, cores, maxISize )
+    message("Junction summarization completed")
+
+    # Create result object
+    counts@gene.counts <- gene.hits
+    counts@exon.intron.counts <- totCounts
+    counts@junction.counts <- junction.hits 
+    counts@e1i.counts <- e1i.hits  
+    counts@ie2.counts <- ie2.hits
+    counts <- rds( counts, targets )
+    
+    return(counts)
+    
+  }
+)
 ##########################################################################
 ##########################################################################
 setGeneric (
