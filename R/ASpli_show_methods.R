@@ -184,7 +184,7 @@ setMethod('show', 'ASpliFeatures',
                 "Access using featuresb(object)", "\n")
             cat("Junctions: GRanges of length", 
                 length(object@junctions),
-                "Access using featuresj(object)")
+                "Access using featuresj(object)","\n")
           })
 #################################################
 setMethod('show', 'ASpliCounts', 
