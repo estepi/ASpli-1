@@ -410,13 +410,14 @@ bam <- loadBAM(targets)
 @
 Overlap alignments against features:
 <<todosJuntos, eval=TRUE>>=
-counts <- readCounts(features, bam, l=100L, maxISize=50000)
+counts <- readCounts(features=features, bam=bam, targets=targets, l=100L, maxISize=50000)
 @
 Perform DE/DU analysis
 <<DU, eval=TRUE>>=
 pair <- c("CT","KD")
 group <- c(rep("CT", 4),rep("KD", 4))
-du_HNRNPC <- DUreport(counts, targets, pair, group)  
+du_HNRNPC <- DUreport(counts, targets, pair, group) 
+
 @
 Analyze AS using junctions:
 <<AS, eval=TRUE>>=

@@ -37,7 +37,7 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, l=100L, maxISize = 50000)
+counts <- readCounts(features, bam, targets,  l=100L, maxISize = 50000)
 pair <- c("CT","KD")
 group <- c(rep("CT", 4),rep("KD", 4))
 du_HNRNPC <- DUreport(counts, targets, pair, group)  

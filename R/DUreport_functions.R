@@ -1,21 +1,23 @@
 .filterByReads <- function( df0, targets, min, type, pair = NULL ) {
 
   # subset a working data frame
-  end <- ncol( df0 )
+    end <- ncol( df0 )
   start <- end - length ( targets$condition )  + 1
   cropped <- df0 [ , start : end ]
   colnames(cropped) <- as.character( targets$condition )
-  
+  colnames(cropped)
   # Modify working dataframe with pair being compared
   if ( is.null( pair )) {
     pair <- as.character( unique( targets$condition ) )
   }
   cropped <- cropped[ , colnames( cropped ) %in% pair ]
-  
+  colnames(cropped) <- as.character( targets$condition )
   # Calculates row means for conditions being compared
+  colnames(cropped)
+  
   list <- matrix( unlist( 
     lapply( pair, function( x ) {
-          rowMeans( cropped[ , colnames( cropped ) == x ] ) >= min } ) ),  
+    rowMeans( cropped[ , colnames( cropped ) == x ] )   >= min  } ) ),  
     nrow=nrow(cropped), 
     byrow = FALSE )
 
