@@ -1,3 +1,5 @@
+  
+
 .createGRangesGenes <-
   function(genome, md)
   {
@@ -256,8 +258,12 @@
               multIR = multIR+1
             } else  {
               jranges.start <- junctions
+              #start junction is equal to its end:
               start(jranges.start) <- end(jranges.start)
+              #start bin vs end junction: look for end J == start BIN.  
               st <- length(findOverlaps(type = "start", exons.introns.unique[i,], jranges.start))
+              
+              #end bin vs end   junction
               jranges.end <- junctions
               end(jranges.end) <- start(jranges.end)
               end <- length(findOverlaps(type="end", exons.introns.unique[i,], jranges.end))
@@ -265,19 +271,21 @@
               if ( (st > 0) && (end > 0) ) { multES = multES+1;  
                                              events[i] <- "ES*"; 
                                              eventsJ[i] <- "ES"}
-              
-              else if ((st > 0) && (auxdf$strand[i] =="+")) { multAlt3ss = multAlt3ss +1;
-                                                               events[i] <- "Alt3ss*";  
-                                                               eventsJ[i]<-"Alt3ss" }     
-              else if ((st > 0) && (auxdf$strand[i]=="-" )) { multAlt3ss = multAlt3ss +1; 
-                                                               events[i] <- "Alt3ss*";  
-                                                               eventsJ[i]<-"Alt3ss"} 
-              else if ((end > 0) & (auxdf$strand[i]=="+" )) { multAlt5ss = multAlt5ss + 1; 
-                                                               events[i] <- "Alt5ss*"; 
-                                                               eventsJ[i]<-"Alt5ss"}
-              else if ((end > 0) && (auxdf$strand[i]=="-")) { multAlt5ss = multAlt5ss + 1; 
-                                                              events[i]  <-  "Alt5ss*"; 
-                                                              eventsJ[i] <- "Alt5ss"}           
+              # 
+              # else if ((st > 0) && (auxdf$strand[i] =="+")) { multAlt3ss = multAlt3ss +1;
+              #                                                  events[i] <- "Alt3ss*";  
+              #                                                  eventsJ[i]<-"Alt3ss" }     
+              # 
+              # else if ((st > 0) && (auxdf$strand[i]=="-" )) { multAlt3ss = multAlt3ss +1; 
+              #                                                  events[i] <- "Alt3ss*";  
+              #                                                  eventsJ[i]<-"Alt3ss"} 
+              # 
+              #  else if ((end > 0) & (auxdf$strand[i]=="+" )) { multAlt5ss = multAlt5ss + 1; 
+              #                                                  events[i] <- "Alt5ss*"; 
+              #                                                  eventsJ[i]<-"Alt5ss"}
+              # else if ((end > 0) && (auxdf$strand[i]=="-")) { multAlt5ss = multAlt5ss + 1; 
+              #                                                 events[i]  <-  "Alt5ss*"; 
+              #                                                 eventsJ[i] <- "Alt5ss"}           
             } 
           }
           #not undef
