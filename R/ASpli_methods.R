@@ -1,138 +1,140 @@
-##########################################################################
-setClass(
-    Class = "ASpliFeatures",
+# ---------------------------------------------------------------------------- #
+# Class definitions
+setClass( Class = "ASpliFeatures",
     representation = representation(
-      genes = "GRangesList",
-      bins = "GRanges",
-      junctions = "GRanges"))
-##########################################################################
-setClass(
-  Class = "ASpliCounts",
-  representation = representation(
-    gene.counts = "data.frame", 
-    exon.intron.counts = "data.frame",
-    junction.counts = "data.frame",
-    e1i.counts = "data.frame", 
-    ie2.counts = "data.frame",
-    gene.rd = "data.frame",
-    bin.rd = "data.frame"))
-##########################################################################
-setClass(
-  Class="ASpliAS",
-  representation = representation(
-    irPIR = "data.frame",
-    altPSI = "data.frame",
-    esPSI = "data.frame",
-    junctionsPIR = "data.frame",
-    junctionsPSI = "data.frame",
-    join = "data.frame")
-  )
-##########################################################################
-  setClass(
-    Class = "ASpliDU",
+        genes = "GRangesList",
+        bins = "GRanges",
+        junctions = "GRanges"))
+
+setClass( Class = "ASpliCounts",
     representation = representation(
-      genes = "data.frame",
-      bins = "data.frame",
-      junctions = "data.frame"))
-##########################################################################  
-setGeneric (
-    name = "binGenome",
-    def = function(genome, md = NULL)
-      standardGeneric("binGenome"))
-##########################################################################
+        gene.counts = "data.frame", 
+        exon.intron.counts = "data.frame",
+        junction.counts = "data.frame",
+        e1i.counts = "data.frame", 
+        ie2.counts = "data.frame",
+        gene.rd = "data.frame",
+        bin.rd = "data.frame"))
+
+setClass( Class="ASpliAS",
+    representation = representation(
+        irPIR = "data.frame",
+        altPSI = "data.frame",
+        esPSI = "data.frame",
+        junctionsPIR = "data.frame",
+        junctionsPSI = "data.frame",
+        join = "data.frame") )
+
+setClass( Class = "ASpliDU",
+    representation = representation(
+        genes = "data.frame",
+        bins = "data.frame",
+        junctions = "data.frame",
+        splice = "data.frame" ))
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# Set methods
+setGeneric ( name = "binGenome", 
+    def = function( genome, geneSymbols = NULL, 
+        logTo = "ASpli_binFeatures.log" ) standardGeneric( "binGenome" ) )
+
 setMethod(
-  f = "binGenome",
-  signature = "TxDb",
-  definition = function (genome,md = NULL){
-    features <- new(Class = "ASpliFeatures")
-    if (is.null(md))
-    {
-      md <- data.frame(names(transcriptsBy(genome)), stringsAsFactors = FALSE)
-      row.names(md) <- names(transcriptsBy(genome))
-      colnames(md) <- "symbol" 
-    }
-    sink("ASpli_binFeatures.log")
-    genes.by.exons <- .createGRangesGenes(genome, md) 
-    lg <- length(genes.by.exons)
-    message("* Number of extracted Genes =",lg,"\n")
-    cat("* Number of extracted Genes =")
-    cat(lg)
-    cat("\n")
-##########################################################################
-    exon.bins <- .createGRangesExons(genome, md)
-    #add locus_overlap
-    index <- match(exon.bins@elementMetadata$locus, names(genes.by.exons))
-    locus_overlap <- rep("-", length(exon.bins))
-    locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[index]
-    mcols(exon.bins) <- append(mcols(exon.bins), DataFrame(locus_overlap=locus_overlap))
-    le <- length(exon.bins)
-    message("* Number of extracted Exon Bins =",le)
-    cat("* Number of extracted Exon Bins =")
-    cat(le)
-    cat("\n")
-##########################################################################
-    intron.tot <- .createGRangesIntrons(genome, md)
-    #add locus_overlap
-    index <- match(intron.tot@elementMetadata$locus, names(genes.by.exons))
-    locus_overlap <- rep("-", length(intron.tot))
-    locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[index]
-    mcols(intron.tot) <- append(mcols(intron.tot), 
-                                DataFrame(locus_overlap=locus_overlap))
-    li <- length(intron.tot)
-    message("* Number of extracted intron bins =",li)
-    cat("* Number of extracted intron bins =")
-    cat(li)
-    cat("\n")
-##########################################################################
-    transcripts <- .createGRangesTranscripts(genome)
-    lt <- length(unlist(transcripts))
-    message("* Number of extracted trascripts =",lt)
-    cat("* Number of extracted trascripts =")
-    cat(lt)
-    cat("\n")
-##########################################################################
-    junctions <- .createGRangesJunctions(genome) 
-    #add locus_overlap
-    index <- match(junctions@elementMetadata$locus, names(genes.by.exons))
-    locus_overlap <- rep("-", length(junctions))
-    locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[index]
-    mcols(junctions) <- append(mcols(junctions), 
-                               DataFrame(locus_overlap=locus_overlap))
-    lj<-length(junctions)
-    message("* Number of extracted junctions =",lj)
-    cat("* Number of extracted junctions =")
-    cat(lj)
-    cat("\n")
-##########################################################################
-    intron.bins <- intron.tot[intron.tot@elementMetadata$feature == "I"]
-    intron.orig <- intron.tot[intron.tot@elementMetadata$feature == "Io"]
-    class <- rep("fullI", length(intron.orig))
-    mcols(intron.orig) <- append(mcols(intron.orig), DataFrame(class=class))
-    event <- rep("-", length(intron.orig))
-    eventJ <- rep("-", length(intron.orig))
-    mcols(intron.orig) <- append(mcols(intron.orig), DataFrame(event=event))
-    mcols(intron.orig) <- append(mcols(intron.orig), DataFrame(eventJ=eventJ))
-    ########aca la modificacion:
-    exons.introns <- .findASBin(exon.bins, intron.bins, transcripts, junctions)
-    fullT <- c(exons.introns,intron.orig)
-    #add locus_overlap #queda agregado por la combinacion
-    ############aca habria que armar la lista.
-    features@genes <- genes.by.exons
-    features@bins <- fullT
-    features@junctions <- junctions
-    sink()
-    return(features)})
-##########################################################################
-setGeneric (
-  name = "rds",
-  def = function(counts, targets)
-  standardGeneric("rds"))
-##########################################################################
+    f = "binGenome",
+    signature = "TxDb",
+    definition = function ( genome, geneSymbols = NULL, logTo = "ASpli_binFeatures.log") {
+      
+      features <- new( Class = "ASpliFeatures" )
+      
+      if ( is.null( geneSymbols ) ) {
+        # Recupera los nombres de los genes
+        geneSymbols <- data.frame( names( transcriptsBy(genome) ), stringsAsFactors = FALSE)
+        row.names(geneSymbols) <- names( transcriptsBy(genome) )
+        colnames(geneSymbols)  <- "symbol" 
+      }
+      if ( ! is.null ( logTo ) ) {
+        sink( file = logTo )
+      }
+      genes.by.exons <- .createGRangesGenes( genome, geneSymbols ) 
+      
+      msg <- paste( "* Number of extracted Genes =" , length( genes.by.exons ) )
+      message( msg )
+      if ( sink.number() > 0 ) cat( paste( msg, "\n" ) )
+      
+      
+      exon.bins <- .createGRangesExons(genome, geneSymbols)
+      #add locus_overlap
+      index <- match(exon.bins@elementMetadata$locus, names(genes.by.exons))
+      locus_overlap <- rep("-", length(exon.bins))
+      locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[index]
+      mcols(exon.bins) <- append(mcols(exon.bins), DataFrame(locus_overlap=locus_overlap))
+      
+      msg <- paste( "* Number of extracted Exon Bins =", length( exon.bins ) )
+      message( msg )
+      if ( sink.number() > 0 ) cat( msg, "\n" ) 
+      
+      
+      intron.tot <- .createGRangesIntrons(genome, geneSymbols)
+      #add locus_overlap
+      index <- match(intron.tot@elementMetadata$locus, names(genes.by.exons))
+      locus_overlap <- rep("-", length(intron.tot))
+      locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[index]
+      mcols(intron.tot) <- append( mcols(intron.tot), 
+          DataFrame(locus_overlap=locus_overlap) )
+      
+      msg <- paste( "* Number of extracted intron bins =", length( intron.tot ) )
+      message( msg )
+      if ( sink.number() > 0 ) cat( paste( msg, "\n" ) )
+      
+      transcripts <- .createGRangesTranscripts(genome)
+      
+      msg <- paste( "* Number of extracted trascripts =" , length( unlist( transcripts ) ) )
+      message( msg )
+      if ( sink.number() > 0 ) cat( paste( msg,"\n") )
+      
+      junctions <- .createGRangesJunctions( genome ) 
+      
+      #add locus_overlap
+      index <- match( junctions@elementMetadata$locus, names( genes.by.exons ) )
+      locus_overlap <- rep( "-", length( junctions ) )
+      locus_overlap <- genes.by.exons@elementMetadata$locus_overlap[ index ]
+      mcols(junctions) <- append( mcols( junctions ), 
+          DataFrame( locus_overlap = locus_overlap ) )
+      
+      msg <- paste("* Number of extracted junctions =", length(junctions) )
+      message( msg)
+      if ( sink.number() > 0 ) cat( paste( msg, "\n" ) )
+      
+      intron.bins <- intron.tot[ intron.tot@elementMetadata$feature == "I"  ]
+      intron.orig <- intron.tot[ intron.tot@elementMetadata$feature == "Io" ]
+      
+      class  <- rep("fullI", length( intron.orig ))
+      mcols( intron.orig ) <- append( mcols( intron.orig ), DataFrame( class=class ))
+      event  <- rep("-", length( intron.orig ))
+      eventJ <- rep("-", length( intron.orig ))
+      mcols( intron.orig ) <- append( mcols( intron.orig ), DataFrame( event=event ))
+      mcols( intron.orig ) <- append( mcols( intron.orig ), DataFrame( eventJ=eventJ ))
+      
+      exons.introns <- .findAsBin( exon.bins, intron.bins, transcripts, junctions, logTo )
+      fullT <- c(exons.introns,intron.orig)
+      
+      features@genes <- genes.by.exons
+      features@bins <- fullT
+      features@junctions <- junctions
+      
+      return( features ) 
+    })
+    
+    
+setGeneric( name = "rds",
+  def = function( counts, targets ) standardGeneric("rds") )
+
+# TODO: Las densidades de reads de genes y bins se calculan dos veces. Una 
+# vez acá y otra vez cuando se hace el filtrado para hacer DU.
 setMethod(
   f= "rds",
   signature = "ASpliCounts",
-  definition = function(counts, targets)
-  {
+  definition = function(counts, targets) {
     geneStart <- ncol(countsg(counts))-nrow(targets)+1
     gene.rd <- cbind( countsg(counts)[,1:geneStart-1], 
                       countsg(counts)[,geneStart:ncol(countsg(counts))]/countsg(counts)$effective_length
@@ -155,26 +157,27 @@ setMethod(
 # readCounts
 setGeneric (
   name = "readCounts",
-  def = function(features, bam,  targets, cores=NULL, l, maxISize, minAnchor=NULL)
+  def = function( features, bam,  targets, cores = 1, readLength, maxISize, 
+      minAnchor = NULL)
   standardGeneric("readCounts") )
 
 setMethod(
   f = "readCounts",
   signature = "ASpliFeatures",
-  definition = function( features, bam,  targets, cores=NULL, l, maxISize,  minAnchor = 10) {
+  definition = function( features, bam,  targets, cores = 1, readLength, 
+      maxISize, minAnchor = 10) {
       
     counts <- new(Class="ASpliCounts")
-    
     minA <- round( minAnchor * l / 100 )
     
-    # Coutn Genes
+    # Count Genes
     gene.hits <- .counterGenes( bam, featuresg( features ), cores )
     message("Read summarization by gene completed")
     counts@gene.counts <- gene.hits
 
     # Count exons 
     bins <- featuresb( features )
-    totCounts <- .counterBin( bam, bins, gene.hits, cores )
+    exons.hits <- .counterBin( bam, bins, gene.hits, cores )
     message( "Read summarization by bin completed" )
     
     # Count introns
@@ -184,16 +187,16 @@ setMethod(
 
     # Count exon1 - intron regions
     e1i <- introns
-    start(e1i) <- start(introns)-( l - minAnchor )
-    end(e1i)   <- start(introns)+( l - minAnchor )
-    e1i.hits   <- .counterJbin(bam, e1i, gene.hits, cores, l)
+    start( e1i ) <- start( introns ) - ( l - minA )
+    end( e1i )   <- start( introns ) + ( l - minA )
+    e1i.hits     <- .counterJbin(bam, e1i, gene.hits, cores, l)
     message("Read summarization by ei1 region completed")
     
     # Count intron - exon2 regions
     ie2 <- introns
     start( ie2 ) <- end( introns ) - ( l - minA )
-    end( ie2 ) <- end( introns ) + ( l - minA )
-    ie2.hits <- .counterJbin( bam, ie2, gene.hits, cores, l )
+    end( ie2 )   <- end( introns ) + ( l - minA )
+    ie2.hits     <- .counterJbin( bam, ie2, gene.hits, cores, l )
     message("Read summarization by ie2 region completed")
     
     # Count junctions
@@ -202,7 +205,7 @@ setMethod(
 
     # Create result object
     counts@gene.counts <- gene.hits
-    counts@exon.intron.counts <- totCounts
+    counts@exon.intron.counts <- exons.hits
     counts@junction.counts <- junction.hits 
     counts@e1i.counts <- e1i.hits  
     counts@ie2.counts <- ie2.hits
@@ -212,251 +215,231 @@ setMethod(
     
   }
 )
-##########################################################################
-##########################################################################
+
 setGeneric (
   name= "AsDiscover",
-  def = function(counts, 
-               targets, 
-               features, 
-               bam, 
-               l, 
-               pair,
-               threshold=NULL, 
-               cores=NULL)
-  standardGeneric("AsDiscover")
-  )
-##########################################################################
+  def = function( counts, ... ) standardGeneric("AsDiscover") )
+
 setMethod(
     f = "AsDiscover",
-  signature = "ASpliCounts",
-  definition =function(counts, 
-               targets, 
-               features, 
-               bam, 
-               l, 
-               pair,
-               threshold=NULL, 
-               cores=NULL)
-    
-  {
-    as <- new(Class = "ASpliAS")
-    if(is.null(threshold)){threshold=5}
-    ### Common Part ############################################
-    df0 <- countsj(counts)[countsj(counts)$multipleHit=="-",]
-    df0 <- df0[df0$gene!="noHit",]
-    jcounts <- .filterJunctionBySample(df0=df0, 
-                                    targets=targets, 
-                                    threshold=threshold)  #mean > one of the condition
-##########################################################################
-    #Junctions PSI:
-    junctionsPSI <- .junctionsPSI_SUM(df0, targets, pair)
-    as@junctionsPSI <- junctionsPSI
-    message("Junctions PSI completed")
-    ############es el mismo dataset#########################
-    #JUNTURAS#######################
-    #We analyze each junction as a putative intron. 
-    #So, we estimate PIR using e1i, ie2 counts as an intron retention
-    junctionsPIR <- .junctionsDiscover(df=jcounts, 
-                                     bam, 
-                                     cores=NULL, 
-                                     l, 
-                                     targets, 
-                                     features, 
-                                     pair)
-    message("Junctions PIR completed")
-    as@junctionsPIR <- junctionsPIR
-    ############es el mismo dataset#########################
-    split <- data.frame(matrix(unlist(strsplit(rownames(jcounts),  "[.]") ),
-                            byrow=TRUE, ncol=3),   
-                            row.names=rownames(jcounts),
-                            stringsAsFactors=FALSE )  
-    colnames(split) <- c("chrom","start","end")
-    split$start <- as.numeric(split$start)
-    split$end <- as.numeric(split$end)
-    split$chrom <- as.character(split$chrom)
-    jranges <- GRanges( 
-    seqnames <- split$chrom,
-    ranges  <- IRanges(start= split$start, 
-                      end = split$end, 
-                      names = rownames(split)))
-    ########################################################
-    #parte 1: irPIR intronJPIR_SUM_COND
-    ic <- rbind(countsb(counts)[countsb(counts)$feature == "I",], 
-              countsb(counts)[countsb(counts)$feature == "Io",], 
-              countsb(counts)[countsb(counts)$event == "IR*",],
-              countsb(counts)[countsb(counts)$event == "IR",])
-    intranges <- featuresb(features)[rownames(ic)]
-##########################################################################
-    dfe1e2 <- .e1e2JPIR(intranges, jcounts)
-    dfe1e2$J3 <- as.character(dfe1e2$J3)
-    #junction spanning intron, from e1 to e2. Deafault junction
-    #in functions...
-##########################################################################
-    countsSt <- ncol(counts@e1i.counts)-nrow(targets)+1
-    e1i <- counts@e1i.counts[,countsSt:ncol(counts@e1i.counts)]
-    ie2 <- counts@ie2.counts[,countsSt:ncol(counts@ie2.counts)] 
-##########################################################################
-    J1 <- paste(rownames(e1i),"E1I", sep="_")
-    J2 <- paste(rownames(ie2),"IE2", sep="_")
-    dffinal <- data.frame(J1, e1i, J2, ie2)
-    #no tiene junturas, agregamos las columnas J1, J2
-    empty <- data.frame(matrix(NA, 
-                            nrow =  nrow(dffinal), 
-                            ncol =  ncol(dfe1e2)), 
-                            stringsAsFactors=FALSE)  
-    colnames(empty) <- colnames(dfe1e2)
-    int <- match(dfe1e2$jbin, row.names(dffinal))
-    empty[int,] <- dfe1e2
-    dmerge <- cbind(dffinal, empty); 
-    dmerge$jbin <- NULL
-    
-    dmerge <-  dmerge[ names(intranges) , ]
-    
-##########################################################################    
-    intPIR <- function(x){
-            x[is.na(x)] <- 0 # we have to remove NAs
-            res <- (x[1]+x[2])/(x[1]+x[2]+2*x[3])
-            return(res)
-    }
-##########################################################################
-    df <- dmerge
-    df$J1 <- NULL
-    df$J2 <- NULL
-    df$J3 <- NULL
-    ff <- rep(targets$condition,3)
-    myfactor <- factor(paste(ff, rep(1:3,each=length(targets$condition)),sep="."), 
-                     levels=paste(rep(pair, each=3 ), 1:3, sep="."))
-    colnames(df) <- paste(ff, rep(1:3,each=length(targets$condition)), sep=".")
-    dfSum <- t(apply(df, 1, function(x){tapply(as.numeric(x), 
-                                             INDEX=myfactor, sum  )}))
-    colnames(dfSum) <- rep(unique(targets$condition), each=3) 
-    myfactor <- factor(rep(unique(targets$condition),each=3), levels=pair)
-    intPIRres <- cbind(event=ic$event,
-                     dmerge, 
-                     t(apply(dfSum, 1, 
-                             function(x){tapply(as.numeric(x), 
-                             INDEX=myfactor, 
-                              intPIR  )})))
-    message("Junctions IR PIR completed")
-    as@irPIR <- intPIRres
-##########################################################################
-    #parte 2:altPSI, esPSI exonJPSI_SUM_COND
-    ec <- countsb(counts)[countsb(counts)$feature == "E",]
-    ec <- ec[ec$event != "IR",]
-    ec <- ec[ec$event != "IR*",]
-    exranges <- featuresb(features)[rownames(ec)]
-    dfstart <- .startJPSI(jranges, exranges, jcounts, targets) 
-    #identifies start junctio
-    dfend <- .endJPSI(jranges, exranges, jcounts, targets)  #identifies end junction 
-    dfwithin <- .withinJPSI(jranges, exranges, jcounts, targets)#identifies within junction
-    #add the information at the end of the DF of exonsde
-    corr.start <- match(rownames(dfstart), names(exranges))
-    corr.end <- match(rownames(dfend), names(exranges))
-    corr.w <- match(rownames(dfwithin), names(exranges))
-##########################################################################
-    dffinal <- data.frame(matrix(NA, 
-                              nrow =  length(exranges), 
-                              ncol = 3*ncol(dfstart)), 
-                              stringsAsFactors=FALSE)
-    colnames(dffinal) <- c(colnames(dfstart), colnames(dfend), colnames(dfwithin))
-    colN <- rep(c("J", rownames(targets)), 3)
-    colnames(dffinal) <- colN
-    rownames(dffinal) <- names(exranges)
-    startStart <- 1
-    startEnd <- ncol(dfstart)
-    endStart <- startEnd+ 1
-    endEnd <- endStart + ncol(dfend) - 1
-    withinStart <- endEnd + 1
-    withinEnd <-  withinStart +ncol(dfwithin) - 1
-##########################################################################
-    dffinal[corr.start, startStart:startEnd] <- dfstart
-    dffinal[corr.end, endStart:endEnd] <- dfend
-    dffinal[corr.w, withinStart:withinEnd] <- dfwithin
-    cN <- colnames(dffinal)
-    cN <- cN[cN!="J"]
-    dfEvents <- cbind(event=as.data.frame(exranges@elementMetadata$event), dffinal)
-    colnames(dfEvents)[1] <- "event"
-##########################################################################
-    dfAlt <- rbind(dfEvents[dfEvents$event=="Alt3ss",], 
-                 dfEvents[dfEvents$event=="Alt5ss",], 
-                 dfEvents[dfEvents$event=="Alt3ss*",], 
-                 dfEvents[dfEvents$event=="Alt5ss*",])
-    dfAltSub <- dfAlt[,colnames(dfAlt)!="J"]
-    dfAltSub <- dfAltSub[,colnames(dfAltSub)!="event"]
-    colnames(dfAltSub)  <- cN
-##########################################################################
-    altPSI <- function(x){
-      x[is.na(x)] <- 0 # we have to remove NAs
-      res <- (x[1]+x[2])/(x[1]+x[2]+x[3])
-      return(res)
-    }
-##########################################################################
-    ff <- rep(targets$condition,3)
-    colnames(dfAltSub) <- paste(ff, rep(1:3,each=length(targets$condition)))
-    myfactor <- factor(paste(ff, rep(1:3,each=length(targets$condition))), 
-                     levels=paste(rep(pair, each=3 ), 1:3))
-    
-    dfAltSum <- t(apply(dfAltSub, 1, 
-                function(x){tapply(as.numeric(x), 
-                                         INDEX=myfactor,
-                                         sum  )}))
-    
-    colnames(dfAltSum) <- rep(unique(targets$condition), each= 3 )
-    myfactor <- factor(rep(unique(targets$condition),each= 3 ), levels=pair)
-    altPSIRes <- cbind(dfAlt, t(apply(dfAltSum, 1, 
-                                    function(x){tapply(as.numeric(x), 
-                                                       INDEX=myfactor, 
-                                                       altPSI  )})))
-    colnames(altPSIRes) <- colnames(intPIRres)
-    message("Junctions AltSS PSI completed")
-    as@altPSI <- altPSIRes
-##########################################################################
-    dfES <- rbind(dfEvents[dfEvents$event=="ES",], dfEvents[dfEvents$event=="-",], dfEvents[dfEvents$event=="ES*",] )
-    dfESSub <- dfES[,colnames(dfES)!="J"]
-    dfESSub <- dfESSub[,colnames(dfESSub)!="event"]
-    colnames(dfESSub)  <-cN
-##########################################################################
-    EsPSI <- function(x){
-      x[is.na(x)] <- 0 # we have to remove NAs
-      res <- (x[1]+x[2])/(x[1]+x[2]+x[3]*2)
-      return(res)
-    }
-##########################################################################
-    colnames(dfESSub) <- paste(ff, rep(1:3,each=length(targets$condition)))
-    myfactor <- factor(paste(ff, rep(1:3,each=length(targets$condition))), 
-                 levels=paste(rep(pair, each=3 ), 1:3))
-    dfESSum <- t(apply(dfESSub, 1, 
-               function(x){tapply(as.numeric(x), 
-                                        INDEX=myfactor,
-                                        sum  )}))
-    colnames(dfESSum) <- rep(unique(targets$condition), each=3)
-    myfactor <- factor(rep(unique(targets$condition), each=3), levels=pair)
-    EsPSIRes <- cbind(dfES, t(apply(dfESSum, 1, 
-                                  function(x){tapply(as.numeric(x),
-                                                     INDEX=myfactor, 
-                                                     EsPSI  )})))
-##########################################################################
-    colnames(EsPSIRes) <- colnames(intPIRres)
-    message("Junctions ES PSI completed")
-    as@esPSI <- EsPSIRes 
-    #junctions discovery
-    as@join <- rbind(altPSIRes,EsPSIRes, intPIRres)
-    return(as)
-})
-##########################################################################
+    signature = "ASpliCounts",
+    definition = function( counts, 
+        targets, 
+        features, 
+        bam, 
+        readLength, 
+        threshold = 5, 
+        cores = 1 ) {
+      as <- new(Class = "ASpliAS")
+      
+      df0 <- countsj(counts)[ countsj(counts)$multipleHit == "-", ]
+      df0 <- df0[ df0$gene != "noHit" , ]
+      
+      targets <- .condenseTargetsConditions( targets )
+      
+      jcounts <- .filterJunctionBySample( df0=df0,
+          targets=targets,
+          threshold=threshold )
+      
+      # Junctions PSI:
+      junctionsPSI    <- .junctionsPSI_SUM( df0, targets )
+      as@junctionsPSI <- junctionsPSI
+      message("Junctions PSI completed")
+      
+      # Junctions PIR:
+      junctionsPIR <- .junctionsDiscover( df=jcounts, 
+          bam, 
+          cores = cores , 
+          readLength, 
+          targets, 
+          features )
+      
+      as@junctionsPIR <- junctionsPIR
+      message("Junctions PIR completed")
+      
+      jranges <- .createGRangesExpJunctions( rownames( jcounts ) )
+      
+      # TODO: refactor this code to other functions 
+      # ---------------------------------------------------------------------- #
+      # Get all bins that are intronic or are associated to a Intron retention 
+      # event
+      ic <- rbind( countsb(counts)[countsb(counts)$feature == "I",], 
+          countsb(counts)[countsb(counts)$feature == "Io",], 
+          countsb(counts)[countsb(counts)$event   == "IR*",],
+          countsb(counts)[countsb(counts)$event   == "IR",])
+      # Get A GRanges object for intron bins, ordered by ic
+      intranges <- featuresb(features)[ rownames(ic) ]
+      
+      # get exclusion junction counts, and make and index to ordered by ic
+      dfe1e2 <- .e1e2JPIR( intranges, jcounts, targets )
+      indexOrder <- match( dfe1e2$jbin, rownames( ic ) )
+      
+      # Get counts of inclusion junctions
+      e1i <- .extractCountColumns( countse1i( counts ), targets )[ rownames(ic) ,]
+      ie2 <- .extractCountColumns( countsie2( counts ), targets )[ rownames(ic) ,]
+      
+      j3 <- data.frame( matrix( NA, 
+              nrow =  nrow( e1i ), 
+              ncol =  length( targets$condition ) ), 
+          stringsAsFactors = FALSE )
+      colnames( j3 ) <- colnames( e1i )  
+      
+      j3bin <- rep( NA , nrow( j3 ) )
+      j3bin[ indexOrder ] <- rownames( dfe1e2 )
+      j3[ indexOrder, ] <- .extractCountColumns( dfe1e2, targets )
+      
+      # Sum exclusion and inclusion counts by condition
+      sumE1i <- .sumByCond( e1i, targets )
+      sumIe2 <- .sumByCond( ie2, targets )
+      sumJ3  <- .sumByCond( j3,  targets )
+      
+      # Calculates pir
+      pirValues <- ( sumE1i + sumIe2 ) / ( sumE1i + sumIe2 + 2 * sumJ3 )  
+      
+      # Creates result object
+      result <- cbind( 
+          data.frame( event = ic$event ), 
+          data.frame( J1 = paste( rownames( e1i ), "E1I", sep="_") ), 
+          e1i, 
+          data.frame( J2 = paste( rownames( ie2 ), "IE2", sep="_") ), 
+          ie2,
+          data.frame( J3 = j3bin ),
+          j3, 
+          pirValues ) 
+      
+      
+      message("Junctions IR PIR completed")
+      
+      as@irPIR <- result
+      # ---------------------------------------------------------------------- #
+      
+      # ---------------------------------------------------------------------- #
+      # Get all exons, except those that are associated to a intron retention
+      # event
+      ec <- countsb(counts)[countsb(counts)$feature == "E",]
+      ec <- ec[ec$event != "IR",]
+      ec <- ec[ec$event != "IR*",]
+      
+      exranges <- featuresb( features )[ rownames( ec ) ]
+      
+      fillAndReorderBy <- function( df , orderNames ) {
+        indexOrder <- match( rownames( df ) , orderNames )
+        result <- data.frame( 
+            matrix( 
+                NA,
+                nrow = length( orderNames ),
+                ncol = ncol( df ) ) )
+        result[ indexOrder, ] <- df
+        colnames( result ) <- colnames( df )
+        rownames( result ) <- orderNames
+        return( result )
+      }
+      
+      dfstart  <- .getJPSIByOverlap( jranges, exranges, jcounts, targets, 'start' )
+      dfstart  <- fillAndReorderBy( dfstart , rownames( ec ) )
+      dfend    <- .getJPSIByOverlap( jranges, exranges, jcounts, targets, 'end' )   
+      dfend    <- fillAndReorderBy( dfend , rownames( ec ) )
+      dfwithin <- .getJPSIByOverlap( jranges, exranges, jcounts, targets, 'within' )
+      dfwithin <- fillAndReorderBy( dfwithin , rownames( ec ) )
+      
+      events   <- mcols( exranges ) $ event
+      # ---------------------------------------------------------------------- #
+      
+      # ---------------------------------------------------------------------- #
+      # Get the subset of previosly selected exons and gets only those associated
+      # with an alternative splicing site usage event 
+      getAlternativeSS <- function( df, events ) {
+        rbind(
+            df[ events == "Alt3ss", ],
+            df[ events == "Alt5ss", ],
+            df[ events == "Alt3ss*", ],
+            df[ events == "Alt5ss*", ] )
+      }
+      
+      altJ1 <- getAlternativeSS( dfstart , events )
+      altJ2 <- getAlternativeSS( dfend , events )
+      altJ3 <- getAlternativeSS( dfwithin , events )
+      
+      sumAltJ1 <- .sumByCond( .extractCountColumns( altJ1, targets ), targets )
+      sumAltJ1[is.na(sumAltJ1)] <- 0 
+      sumAltJ2 <- .sumByCond( .extractCountColumns( altJ2, targets ), targets )
+      sumAltJ2[is.na(sumAltJ2)] <- 0
+      sumAltJ3 <- .sumByCond( .extractCountColumns( altJ3, targets ), targets )
+      sumAltJ3[is.na(sumAltJ3)] <- 0
+      
+      altPsiValues <- ( sumAltJ1 + sumAltJ2 ) / ( sumAltJ1 + sumAltJ2 + sumAltJ3 )
+      
+      result <- cbind( 
+          data.frame( event = mcols( exranges[ rownames( altJ1) ] )$ event ), 
+          data.frame( J1 = altJ1$overlappedSubjectNames ), 
+          .extractCountColumns( altJ1, targets ),
+          data.frame( J2 = altJ2$overlappedSubjectNames ), 
+          .extractCountColumns( altJ2, targets ),
+          data.frame( J3 = altJ3$overlappedSubjectNames ),
+          .extractCountColumns( altJ3, targets ), 
+          altPsiValues )
+      
+      message("Junctions AltSS PSI completed")
+      altPSI( as ) <- result
+      # ---------------------------------------------------------------------- #
+      
+      # ---------------------------------------------------------------------- #
+      # Get the subset of previosly selected exons and gets only those associated
+      # with an exon skipping event and those not assigned to any splice event.  
+      getES <- function( df, events ) {
+        rbind(
+            df[ events == "ES", ],
+            df[ events == "-", ],
+            df[ events == "ES*", ] )
+      }
+      
+      esJ1 <- getES( dfstart , events )
+      esJ2 <- getES( dfend , events )
+      esJ3 <- getES( dfwithin , events )
+
+      sumEsJ1 <- .sumByCond( .extractCountColumns( esJ1, targets ), targets )
+      sumEsJ1[is.na(sumEsJ1)] <- 0 
+      sumEsJ2 <- .sumByCond( .extractCountColumns( esJ2, targets ), targets )
+      sumEsJ2[is.na(sumEsJ2)] <- 0
+      sumEsJ3 <- .sumByCond( .extractCountColumns( esJ3, targets ), targets )
+      sumEsJ3[is.na(sumEsJ3)] <- 0
+      
+      esPsiValues <- ( sumEsJ1 + sumEsJ2 ) / ( sumEsJ1 + sumEsJ2 + 2 * sumEsJ3 )
+      
+      result <- cbind( 
+          data.frame( event = mcols( exranges[ rownames( esJ1) ] )$ event ), 
+          data.frame( J1 = esJ1$overlappedSubjectNames ), 
+          .extractCountColumns( esJ1, targets ), 
+          data.frame( J2 = esJ2$overlappedSubjectNames ), 
+          .extractCountColumns( esJ2, targets ),
+          data.frame( J3 = esJ3$overlappedSubjectNames ),
+          .extractCountColumns( esJ3, targets ),
+          esPsiValues )
+      
+      message("Junctions ES PSI completed")
+      
+      esPSI( as ) <- result
+      # ---------------------------------------------------------------------- #
+      
+      # TODO: joint podría ser un getter, pero no es necesario mantener toda
+      # esta data repetida
+      joint( as ) <- rbind( altPSI( as ), esPSI( as ), irPIR( as ) )
+      
+      return( as )
+
+    })
 
 # ---------------------------------------------------------------------------- #
 # writeAS
 setGeneric (
   name = "writeAS",
-  def  = function(as, output.dir="as")
+  def  = function(as, output.dir = "as" )
   standardGeneric( "writeAS" ) )
 
 setMethod(
   f = "writeAS",
   signature = "ASpliAS",
-  definition = function( as, output.dir="as") {
+  definition = function( as, output.dir = "as" ) {
     
     # Creates output folder structure
     exonsFilePSI     <- file.path( output.dir, "exons", "exon.altPSI.tab" )       
@@ -488,218 +471,477 @@ setMethod(
   }
 )
 ##########################################################################
+
+# TODO: ¿ Es necesario agregar todos los parámetros con valores por default en
+# la firma del método ? 
 setGeneric (
-  name = "DUreport",
-  def = function(counts, targets, pair, group,
-               minGenReads=NULL,
-               minBinReads=NULL,
-               minRds=NULL,
-               ignoreExternal=NULL,
-               threshold=NULL)
-  standardGeneric("DUreport"))
-##########################################################################
-setGeneric (
-  name = "DUreport_DEXSeq",
-  def = function(counts, targets, pair, group,
-               minGenReads=NULL,
-               minBinReads=NULL,
-               minRds=NULL,
-               threshold=NULL)
-  standardGeneric("DUreport_DEXSeq"))
-##########################################################################
+    name = "DUreport",
+    def = function( counts, 
+        counts, 
+        targets, 
+        minGenReads  = 10,
+        minBinReads  = 5,
+        minRds = 0.05,
+        contrast = NULL,
+        forceGLM = FALSE,
+        ignoreExternal = TRUE,
+        ignoreIo = TRUE, 
+        ignoreI = FALSE
+      ) standardGeneric("DUreport") )
+
+#setGeneric (
+#  name = "DUreport_DEXSeq",
+#  def = function ( counts, ... ) standardGeneric("DUreport_DEXSeq") )
+
 setMethod(
   f = "DUreport",
   signature = "ASpliCounts",
-  definition =function(counts, targets, pair, group, 
-                      minGenReads=NULL,
-                      minBinReads=NULL,
-                      minRds=NULL,
-                      ignoreExternal=NULL,
-                      threshold=NULL)
-  {
-    du <- new(Class="ASpliDU")
-    #define parameters#
-    if(is.null(minGenReads)){minGenReads=10}
-    if(is.null(minBinReads)){minBinReads=5}
-    if(is.null(minRds)){minRds=0.05}
-    if(is.null(threshold)){threshold=5}
-    ##################################
-    df0 <- countsg(counts)
-    dfG0 <- .filterByReads(df0=df0,
-                    targets=targets,
-                    min=minGenReads,
-                    type="any")
-    dfGen <- .filterByRdGen(df0=dfG0,
-                     targets=targets,
-                     min=minRds,
-                     type="any")
-    genesde <- .genesDE(df=dfGen, 
-                 targets=targets, 
-                 pair=pair,
-                 group=group) 
+  definition = function( 
+      counts, 
+      targets, 
+      minGenReads  = 10,
+      minBinReads  = 5,
+      minRds = 0.05,
+      # ---------------------------------------------------------------------- #
+      # Comment to disable offset usage 
+      #offset = FALSE,
+      #offsetAggregateMode = c( "geneMode", "binMode" )[2],
+      #offsetUseFitGeneX = TRUE,
+      # ---------------------------------------------------------------------- #
+      contrast = NULL,
+      forceGLM = FALSE,
+      ignoreExternal = TRUE,
+      ignoreIo = TRUE, 
+      ignoreI = FALSE  
+      # ---------------------------------------------------------------------- #
+      # Comment to disable priorcounts usage in bin normalization 
+      # , priorCounts = 0 
+      # ---------------------------------------------------------------------- #
+     ) {
+    
+    # Create result object                   
+    du <- new( Class="ASpliDU" )
+  
+    # Generate conditions combining experimental factors
+    targets <- .condenseTargetsConditions( targets ) 
+        
+    # ------------------------------------------------------------------------ #
+    # Filter genes and calculates differential usage of genes
+    df0 <- countsg( counts )
+    
+    dfG0 <- .filterByReads( 
+        df0 = df0,
+        targets = targets,
+        min = minGenReads,
+        type = "any" )
+    
+    dfGen <- .filterByRdGen(
+        df0 = dfG0,
+        targets = targets,
+        min = minRds,
+        type = "any" )
+    
+    genesde <- .genesDE( 
+        df=dfGen, 
+        targets = targets,
+        contrast = contrast,
+        forceGLM = forceGLM )
+   
     message("Genes DE completed")
+  
     du@genes <- genesde
-    ##########################################################################
-    dfG0 <- .filterByReads(df0=df0,
-                    targets=targets,
-                    min=minGenReads,
-                    type="all")
-    dfGen <- .filterByRdGen(df0=dfG0,
-                     targets=targets,
-                     min=minRds,
-                     type="all")
-    dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
-    df1 <- .filterByReads(df0=dfBin,
-                   targets=targets, 
-                   min=minBinReads,
-                   type="any")
-    df2 <- .filterByRdBinRATIO(
-    dfBin=df1,
-    dfGen=dfGen,
-    targets=targets, 
-    min=minRds,
-    type="any")
-#bins con AS en binsN
-  if (is.null(ignoreExternal)){ignoreExternal=TRUE}
-  binsdu <- .binsDU(df=df2,
-                  targets,
-                  dfGen,
-                  ignoreExternal=ignoreExternal, 
-                  pair,
-                  group) 
-du@bins <- binsdu
-message("Bins DU completed")
-##########################################################################
-df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
-df <- .filterJunctionBySample(df0=df0, 
-                             targets=targets, 
-                             threshold=threshold)  #mean > one of the condition
-df <- df[df$multipleHit=="-",]
-junctionsdeSUM <- .junctionsDU_SUM(df,
-                                    targets, 
-                                    genesde,
-                                    pair, 
-                                    group,dfGen)
-du@junctions <- junctionsdeSUM
-message("Junctions DU completed")
-return(du)
-}
-)
-#########################################################################
-setMethod(
-  f = "DUreport_DEXSeq",
-  signature = "ASpliCounts",
-  definition = function(counts, targets, pair, group, 
-                      minGenReads=NULL,
-                      minBinReads=NULL,
-                      minRds=NULL,
-                      threshold=NULL)
-  {
-    du <- new(Class="ASpliDU")
-    #define parameters#
-    if(is.null(minGenReads)){minGenReads=10}
-    if(is.null(minBinReads)){minBinReads=5}
-    if(is.null(minRds)){minRds=0.05}
-    if(is.null(threshold)){threshold=5}
-    ###############################################
-    df0 <- countsg(counts)
-    dfG0 <- .filterByReads(df0=df0,
-                         targets=targets,
-                         min=minGenReads,
-                         type="any")
-    dfGen <- .filterByRdGen(df0=dfG0,
-                          targets=targets,
-                          min=minRds,
-                          type="any")
-    genesde <- .genesDE_DESeq(df=dfGen, 
-                            targets=targets, 
-                            pair=pair) 
-    du@genes <- genesde #idem ???
-    ###############################################################
-    dfG0 <- .filterByReads(df0=df0,
-                         targets=targets,
-                         min=minGenReads,
-                         type="all")
-    dfGen <- .filterByRdGen(df0=dfG0,
-                          targets=targets,
-                          min=minRds,
-                          type="all")
+    # ------------------------------------------------------------------------ #
+
+    # ------------------------------------------------------------------------ #
+    # Filter bins and calculates differential usage of bins
+    dfG0 <- .filterByReads(
+        df0 = df0,
+        targets = targets,
+        min = minGenReads,
+        type = "all" )
+    
+    dfGen <- .filterByRdGen( df0 = dfG0,
+        targets = targets,
+        min = minRds,
+        type = "all" )
     
     dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
-    df1 <- .filterByReads(df0=dfBin,
-                        targets=targets, 
-                        min=minBinReads,
-                        type="any")
+    
+    if( ignoreIo ) dfBin <- dfBin[dfBin[,"feature"]!="Io",]
+    
+    df1 <- .filterByReads(
+        df0=dfBin,
+        targets=targets, 
+        min=minBinReads,
+        type="any" )
+    
     df2 <- .filterByRdBinRATIO(
-      dfBin=df1,
-      dfGen=dfGen,
-      targets=targets, 
-      min=minRds,
-      type="any")
-    #bins con AS en binsN
-    binsdu <- .binsDU_DEXSeq(df=df2,
-                           targets=targets,
-                           group=group) 
+        dfBin=df1,
+        dfGen=dfGen,
+        targets=targets, 
+        min=minRds,
+        type="any" )
+
+    # ------------------------------------------------------------------------ # 
+    # Comment to disable offser usage. 
+#    if( offset ) {
+#      mOffset <- .getOffsetMatrix(
+#          dfBin,
+#          dfGen,
+#          targets,
+#          offsetAggregateMode = offsetAggregateMode,
+#          offsetUseFitGeneX   = offsetUseFitGeneX )
+#      mOffset <- mOffset[ rownames( df2 ), ]
+#    } else {
+#      mOffset <- NULL
+#    }
+    # ------------------------------------------------------------------------ # 
+    
+    binsdu <- .binsDU(
+        df = df2,
+        dfGen = dfGen,
+        targets = targets,
+        # -------------------------------------------------------------------- # 
+        # Comment to disable offser usage. 
+#        mOffset = mOffset,
+        mOffset = NULL,
+        # -------------------------------------------------------------------- # 
+        contrast = contrast,
+        forceGLM = forceGLM,
+        ignoreExternal = ignoreExternal,
+        ignoreIo = ignoreIo, 
+        ignoreI = ignoreI
+    # -------------------------------------------------------------------- # 
+    # Comment to disable offser usage. 
+#        mOffset = mOffset,
+    , priorCounts = 0 
+#    , priorCounts = priorCounts 
+    # -------------------------------------------------------------------- # 
+
+) 
+    
     du@bins <- binsdu
-    ########################################################################
-    df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
-    df <- .filterJunctionBySample(df0=df0, 
-                                targets=targets, 
-                                threshold=threshold)  #mean > one of the condition
-    df <- df[df$multipleHit=="-",]
-    junctionsdeSUM <- .junctionsDU_SUM_DEXSeq(df,
-                                            targets=targets, 
-                                            genesde=genesde,
-                                            group=group)
-    du@junctions <- junctionsdeSUM
+    
+    message("Bins DU completed")
+
     return(du)
   }
 )
 
-# ---------------------------------------------------------------------------- #
-# writeDU
-setGeneric (
-  name = "writeDU",
-  def = function( du, output.dir="du" )
-  standardGeneric( "writeDU" ) )
+setGeneric( name = "junctionDUReport",
+    def = function ( counts,
+        targets, 
+        appendTo = NULL, 
+        minGenReads = 10,
+        minRds = 0.05,
+        threshold = 5,
+        contrast = NULL,
+        forceGLM = FALSE 
+        ) standardGeneric("junctionDUReport") )
 
 setMethod(
-  f = "writeDU",
-  signature = "ASpliDU",
-  definition = function( du, output.dir="du" ) {
+    f = "junctionDUReport",
+    signature = "ASpliCounts",
+    definition = function ( 
+        counts, 
+        targets, 
+        appendTo = NULL, 
+        minGenReads = 10,
+        minRds = 0.05,
+        threshold = 5,
+        # -------------------------------------------------------------------- # 
+        # Comment to disable offser usage.         
+#        offset   = FALSE,
+#        offsetAggregateMode = c("geneMode","binMode")[2],
+#        offsetUseFitGeneX = TRUE,
+        # -------------------------------------------------------------------- # 
+        contrast = NULL,
+        forceGLM = FALSE 
+        # -------------------------------------------------------------------- #
+        # Comment to disable priorcounts usage in bin normalization 
+        # , priorCounts = 0 
+        # -------------------------------------------------------------------- #
+        ) {
+      
+      du <- if ( is.null( appendTo ) ) new( Class = "ASpliDU" ) else appendTo
+      
+      targets <- .condenseTargetsConditions( targets )
+      
+      df0 <- countsg(counts)
+      
+      dfG0 <- .filterByReads(
+          df0 = df0,
+          targets = targets,
+          min = minGenReads,
+          type = "all")
+      
+      dfGen <- .filterByRdGen(
+          df0 = dfG0,
+          targets = targets,
+          min = minRds,
+          type = "all" )
+      
+      df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
+      
+      df <- .filterJunctionBySample( df0 = df0, 
+          targets = targets, 
+          threshold = threshold)  #mean > one of the condition
+      
+      df <- df[ df$multipleHit == "-",]
+      
+      # ---------------------------------------------------------------------- # 
+      # Comment to disable offser usage.         
+#      if( offset ){
+#        warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
+#        mOffset <- getOffsetMatrix( 
+#            dfBin, 
+#            dfGen,
+#            targets,
+#            offsetAggregateMode = offsetAggregateMode,
+#            offsetUseFitGeneX= offsetUseFitGeneX )
+#      } else {
+#        mOffset <- NULL
+#      }
+      # ---------------------------------------------------------------------- # 
+      
+      junctionsdeSUM <- .junctionsDU_SUM(
+          df = df,
+          dfGen = dfGen,
+          targets = targets,
+          # ------------------------------------------------------------------ # 
+          # Comment to disable offser usage.         
+#          mOffset = mOffset,
+          mOffset = NULL,
+          # ------------------------------------------------------------------ # 
+          contrast = contrast,
+          forceGLM = forceGLM 
+          # ------------------------------------------------------------------ # 
+          # Comment to disable priorcounts usage in normalizefeatuebygen.         
+#          ,priorCounts = priorCounts
+          ,priorCounts = 0  
+          # ------------------------------------------------------------------ # 
+      )
+      
+      
+      du@junctions <- junctionsdeSUM
+      message( "Junctions DU completed" )
+      
+      return( du )
+    } )
+
     
-    # Creates outut folder structure                                           
-    genesFile     <- file.path( output.dir, "genes","gene.de.tab" )       
-    exonsFile     <- file.path( output.dir, "exons", "exon.du.tab")       
-    intronsFile   <- file.path( output.dir, "introns", "intron.du.tab")
-    junctionsFile <- file.path( output.dir, "junctions", "junction.du.tab")                                   	     	    
+setGeneric( name = "spliceDUReport",
+    def = function( counts, targets, fdr = 0.1, number = 10000, 
+        appendTo = NULL )standardGeneric( 'spliceDUReport' ) )
+
+setMethod( f = "spliceDUReport",
+    signature( 'ASpliCounts'),
+    definition = function( counts, targets, fdr = 0.1, number = 10000, appendTo = NULL ) {
+      
+      if ( is.null( appendTo ) ) du <- new( Class = 'ASpliDU' ) else du <- appendTo 
+      
+      targets <- .condenseTargetsConditions( targets )
+      countData <- countsb( counts )
+      countData <- countData[ countData[,'feature'] != "Io", ]
+      
+      y <- DGEList( counts = .extractCountColumns( countData, targets ),
+          group = targets$condition,
+          genes = data.frame( 
+              locus = countData$locus, 
+              bin   = rownames( countData ) ) )
+      
+      y <- DGEList( counts = .extractCountColumns( countData, targets ),
+          group = targets$condition,
+          genes = .extractDataColumns(countData, targets) )       
+      
+      keep <- rowSums( cpm( y ) > 1) >= 2
+      y <- y[ keep, , keep.lib.sizes = FALSE ]
+      y <- calcNormFactors( y )
+      
+      design <- model.matrix( ~targets$condition )
+      y      <- estimateDisp( y, design )
+      fit    <- glmFit( y, design )
+      captured <- capture.output(
+          ds <- diffSpliceDGE( 
+              fit, coef = 2, geneid = "locus", exonid = "exonid" ) )
+      tsp    <- topSpliceDGE( ds, test = "exon", FDR = fdr, number = number )
+      
+      spliceDU(du) <- tsp
+      
+      return( du )
+    } )
+
+
+
+
     
-    file.exists( output.dir ) || dir.create( output.dir )
-    for (filename in c( genesFile, exonsFile, intronsFile, junctionsFile ) ) {
-      dir.create( dirname( filename ) )
+# TODO: Qué pasa con las funciones de DEXSeq con las nuevas modificaciones de
+# ASpli
+#setMethod(
+#  f = "DUreport_DEXSeq",
+#  signature = "ASpliCounts",
+#  definition = function(counts, targets, pair, group, 
+#                      minGenReads=NULL,
+#                      minBinReads=NULL,
+#                      minRds=NULL,
+#                      threshold=NULL) {
+#                    
+#    du <- new(Class="ASpliDU")
+#    #define parameters#
+#    if(is.null(minGenReads)){minGenReads=10}
+#    if(is.null(minBinReads)){minBinReads=5}
+#    if(is.null(minRds)){minRds=0.05}
+#    if(is.null(threshold)){threshold=5}
+#    ###############################################
+#    df0 <- countsg(counts)
+#    dfG0 <- .filterByReads(df0=df0,
+#                         targets=targets,
+#                         min=minGenReads,
+#                         type="any")
+#    dfGen <- .filterByRdGen(df0=dfG0,
+#                          targets=targets,
+#                          min=minRds,
+#                          type="any")
+#    genesde <- .genesDE_DESeq(df=dfGen, 
+#                            targets=targets, 
+#                            pair=pair) 
+#    du@genes <- genesde 
+#    
+#    ###############################################################
+#    dfG0 <- .filterByReads(df0=df0,
+#                         targets=targets,
+#                         min=minGenReads,
+#                         type="all")
+#    dfGen <- .filterByRdGen(df0=dfG0,
+#                          targets=targets,
+#                          min=minRds,
+#                          type="all")
+#    
+#    dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
+#    df1 <- .filterByReads(df0=dfBin,
+#                        targets=targets, 
+#                        min=minBinReads,
+#                        type="any")
+#    df2 <- .filterByRdBinRATIO(
+#      dfBin=df1,
+#      dfGen=dfGen,
+#      targets=targets, 
+#      min=minRds,
+#      type="any")
+#    #bins con AS en binsN
+#    binsdu <- .binsDU_DEXSeq(df=df2,
+#                           targets=targets,
+#                           group=group) 
+#    du@bins <- binsdu
+#    ########################################################################
+#    df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
+#    df <- .filterJunctionBySample(df0=df0, 
+#                                targets=targets, 
+#                                threshold=threshold)  #mean > one of the condition
+#    df <- df[df$multipleHit=="-",]
+#    junctionsdeSUM <- .junctionsDU_SUM_DEXSeq(df,
+#                                            targets=targets, 
+#                                            genesde=genesde,
+#                                            group=group)
+#    du@junctions <- junctionsdeSUM
+#    return(du)
+#  }
+#)
+
+# ---------------------------------------------------------------------------- #
+# writeDU
+
+setGeneric( name = 'containsGenesAndBins', 
+    def = function ( du, ... ) standardGeneric("containsGenesAndBins") )
+
+setMethod( f = 'containsGenesAndBins', 
+    signature = "ASpliDU",
+    definition = function ( du ) {
+      nrow( genesDE( du ) ) > 0  & nrow( binsDU( du) ) > 0 
+    } )
+
+setGeneric( name = 'containsJunctions', 
+    def = function ( du, ... ) standardGeneric("containsJunctions") )
+
+setMethod( f = 'containsJunctions', 
+    signature = "ASpliDU",
+    definition = function ( du ) {
+      nrow( junctionsDU( du ) ) > 0
+    } )
+
+
+setGeneric( name = 'containsSplice', 
+    def = function ( du, ... ) standardGeneric("containsSplice") )
+
+setMethod( f = 'containsSplice', 
+    signature = "ASpliDU",
+    definition = function ( du ) {
+      nrow( spliceDU( du ) ) > 0
+    } )
+
+setGeneric( name = "writeDU", 
+    def = function ( du, output.dir="du"  ) standardGeneric( "writeDU" ) )
+
+setMethod(
+    f = "writeDU",
+    signature = "ASpliDU",
+    definition = function( du, output.dir="du" ) {
+      
+      paths <- list()
+      # Creates output folder structure
+      if ( containsGenesAndBins( du ) ) {
+        genesFile     <- file.path( output.dir, "genes","gene.de.tab" )       
+        exonsFile     <- file.path( output.dir, "exons", "exon.du.tab")       
+        intronsFile   <- file.path( output.dir, "introns", "intron.du.tab")
+        paths <- append( paths, list( genesFile, exonsFile, intronsFile  ))
+      }
+      
+      if ( containsJunctions( du ) ) {
+        junctionsFile <- file.path( output.dir, "junctions", "junction.du.tab")
+        paths <- append( paths , list( junctionsFile ) )
+      }
+      
+      if ( containsSplice( du ) ) {
+        spliceFile <- file.path( output.dir, "splice", "splice.du.tab")
+        paths <- append( paths , list( spliceFile ) )
+      }
+      
+      file.exists( output.dir ) || dir.create( output.dir )
+      for (filename in paths ) {
+        dir.create( dirname( filename ) )
+      }
+      
+      if ( containsGenesAndBins( du ) ) {
+        # Export Genes  
+        write.table( genesDE( du ), genesFile, sep = "\t", quote = FALSE, 
+            col.names = NA )
+        
+        # Export Exons
+        exonBins <- binsDU(du)[binsDU(du)$feature == "E",]
+        exonBins <- exonBins[exonBins$event !="IR",]
+        write.table( exonBins, exonsFile, sep="\t", quote=FALSE, col.names=NA)
+        
+        
+        # Export Introns 
+        intronBins <- rbind( 
+            binsDU(du)[binsDU(du)$feature == "I" ,], 
+            binsDU(du)[binsDU(du)$feature == "Io",],
+            binsDU(du)[binsDU(du)$event   == "IR",])
+        write.table( intronBins, intronsFile, sep = "\t", quote = FALSE, 
+            col.names = NA )
+      }
+      # Export Junctions
+      if ( containsJunctions( du ) ) {
+        write.table( junctionsDU( du ), junctionsFile, sep = "\t", quote = FALSE, 
+            col.names=NA )
+      }
+      
+      if ( containsSplice( du ) ) {
+        write.table( spliceDU( du ), spliceFile, sep = "\t", quote = FALSE, 
+            col.names=NA )
+      }
+      
     }
-    
-    # Export Genes  
-    write.table( genesDE( du ), genesFile, sep = "\t", quote = FALSE, 
-        col.names = NA )
-      
-    # Export Exons
-    exonBins <- binsDU(du)[binsDU(du)$feature == "E",]
-    exonBins <- exonBins[exonBins$event !="IR",]
-    write.table( exonBins, exonsFile, sep="\t", quote=FALSE, col.names=NA)
-      
-  
-    # Export Introns 
-    intronBins <- rbind( binsDU(du)[binsDU(du)$feature == "I" ,], 
-                         binsDU(du)[binsDU(du)$feature == "Io",],
-                         binsDU(du)[binsDU(du)$event   == "IR",])
-    write.table( intronBins, intronsFile, sep = "\t", quote = FALSE, 
-                 col.names = NA )
-      
-    # Export Junctions
-    write.table( junctionsDU( du ), junctionsFile, sep = "\t", quote = FALSE, 
-                 col.names=NA )
-  }
 )
 # ---------------------------------------------------------------------------- #
 

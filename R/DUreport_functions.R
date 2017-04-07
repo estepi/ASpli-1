@@ -1,24 +1,42 @@
+.extractCountColumns <- function ( aDataframe, targets ) {
+  result <- aDataframe[ , match( row.names(targets), colnames( aDataframe ) ) ]
+  colnames( result ) <- as.character( row.names(targets) )
+  return( result )
+}
+
+.extractDataColumns <- function ( aDataframe, targets ) {
+  result <- aDataframe[ , - match( row.names(targets) , colnames( aDataframe ) ) ]
+  return( result )
+}
+
+.condenseTargetsConditions <- function ( targets ) {
+  if( ! "condition" %in% colnames( targets ) ) {
+    
+    targets <- data.frame( 
+        targets, 
+        condition = apply( targets[ , -1 , drop = FALSE] ,1 ,paste,collapse="_"))
+    
+  }
+  return( targets )
+}
+
 .filterByReads <- function( df0, targets, min, type, pair = NULL ) {
 
   # subset a working data frame
-    end <- ncol( df0 )
-  start <- end - length ( targets$condition )  + 1
-  cropped <- df0 [ , start : end ]
-  colnames(cropped) <- as.character( targets$condition )
-  colnames(cropped)
+  cropped <- .extractCountColumns( df0, targets )
+ 
   # Modify working dataframe with pair being compared
-  if ( is.null( pair )) {
+  # TODO: pair no se requiere más, ¿modificar por constrastes?
+  if ( is.null( pair ) ) {
     pair <- as.character( unique( targets$condition ) )
   }
-  cropped <- cropped[ , colnames( cropped ) %in% pair ]
-  colnames(cropped) <- as.character( targets$condition )
-  # Calculates row means for conditions being compared
-  colnames(cropped)
+  cropped <- cropped[ , targets$condition %in% pair ]
   
+  # Calculates row means for conditions being compared
   list <- matrix( unlist( 
     lapply( pair, function( x ) {
-    rowMeans( cropped[ , colnames( cropped ) == x ] )   >= min  } ) ),  
-    nrow=nrow(cropped), 
+    rowMeans( cropped[ , targets$condition == x ] ) >= min  } ) ),  
+    nrow=nrow( cropped ), 
     byrow = FALSE )
 
   # Filter original gene counts 
@@ -30,277 +48,351 @@
   
   return ( df )
 }
-#########################################################################
-.filterByRdGen <- function(df0, targets, min, type) {
-    
-  a <- table( targets$condition ) 
-  start <- ncol(df0)-sum(a)+1
-  frd <- df0[,start:ncol(df0)]/df0$effective_length
-  colnames(frd) <- targets$condition
-  ######################  
-  list <- matrix(unlist(
-    lapply(unique(colnames(frd)), 
-            function(x) rowMeans(frd[,colnames(frd) == x])  >= min )),  
-    nrow = nrow(frd), 
-    byrow = FALSE)
-  #######################
+
+
+.filterByRdGen <- function( df0, targets, min, type ) {
+  
+  dens <- .extractCountColumns( df0, targets ) / df0$effective_length
+  
+  list <- matrix( unlist(
+    lapply( unique( targets$condition ), 
+            function( x ) {
+              rowMeans( dens[ , targets$condition == x ] ) >= min } )),  
+    nrow = nrow( dens ), 
+    byrow = FALSE )
+
   #keeps those genes which ave rd > min in any condition
+
   if (type=="any")  { 
-    ii <- rowSums(list)>0  
-    df <- df0[ii,]
-  }else  { 
-    ii <- rowSums(list)==ncol(list)
-    df <- df0[ii,]
+    df <- df0[ rowSums( list ) > 0             , ]
+  } else  {
+    df <- df0[ rowSums( list ) == ncol( list ) , ]
   }
+  
   return (df)
 }
-#####################################################################
-.genesDE <-
-  function(df, targets, pair, group)
-  { 
-    countsSt <- ncol(df) - nrow(targets) + 1
-    #########################################################
-    er <- DGEList(counts=df[,countsSt:ncol(df)],group=group)
-    er <- calcNormFactors(er) #methods TMM
-    er <- estimateCommonDisp(er)
-    er <- estimateTagwiseDisp(er)
-    et <- exactTest(er, pair=pair)
-    fdr.gen <- p.adjust(et$table$PValue, method="BH")
-    et_merge <- cbind(et$table, fdr.gen) #ww should have read density by sample
-    #########################################################
-    genes_full <- data.frame(df[,-(countsSt:ncol(df))],
-                           logFC=as.numeric(et$table$logFC), 
-                           pvalue=as.numeric(et$table$PValue), 
-                           gen.fdr=as.numeric(fdr.gen), 
-                           stringsAsFactors=FALSE)
-    rownames(genes_full) <- rownames(df)
-    return(genes_full)
-  }
-################################################################
-.filterByRdBinRATIO <-
-  function(
+
+
+.getDefaultContrasts <- function ( conditions ) {
+	contrast <- rep( 0, length( unique( conditions ) ) )
+	contrast[1:2] <- c(-1,1)
+  return( contrast )
+}
+
+.genesDE <- function( df, targets, contrast = NULL, forceGLM = FALSE ) { 
+  
+  if( is.null( contrast ) ) contrast <- .getDefaultContrasts(targets$condition)
+  
+  cols <- match( rownames( targets ), colnames( df ) )
+  
+  group <- targets$condition
+  
+  er <- DGEList( counts = df[ , cols ], samples=targets, group=group)
+  er <- calcNormFactors( er )
+  
+  justTwoConditions <- sum( contrast != 0 ) == 2
+  
+  if( justTwoConditions & ! forceGLM ){
+    # TODO: ¿Pasar el design a estimateDisp?
+    #design <- model.matrix( ~0 + group, data = er$samples )
+#    er   <- estimateDisp( er, design = design )
+    capture.output( er   <- estimateDisp( er ) )
+    pair <- which( contrast != 0 )
+    et   <- exactTest(er, pair=pair)
+  } else {
+    design <- model.matrix( ~0 + group, data = er$samples )
+    
+    cat("design:\n")
+    cat(design)
+    cat("\n")
+    er     <- estimateDisp( er, design = design )
+    glf    <- glmFit( er, design = design)  
+    et     <- glmLRT( glf, contrast = contrast)
+  } 
+  
+  fdr.gen <- p.adjust( et$table$PValue, method="BH" )
+  
+  cols <- match(rownames( targets ), colnames( df ) )
+  geneData <- .extractDataColumns( df, targets )
+  genesFull <- data.frame( geneData ,
+      logFC = as.numeric( et$table$logFC ), 
+      pvalue = as.numeric( et$table$PValue ), 
+      gen.fdr = as.numeric(fdr.gen), 
+      stringsAsFactors = FALSE)
+  rownames( genesFull ) <- rownames( df )
+  return( genesFull )
+}
+
+
+.filterByRdBinRATIO <- function( 
     dfGen,
     dfBin,
     targets, 
     min, 
-    type) 
-  {
-    ########################################
-    a <- table(targets$condition) 
-    startG <- ncol(dfGen)-sum(a)+1
-    startB <- ncol(dfBin)-sum(a)+1
-    genes.rd <- dfGen[,startG:ncol(dfGen)]/dfGen$effective_length #OK
-    bins.rd <- dfBin[,startB:ncol(dfBin)]/dfBin$length #OK
-    ###############################
-    colnames(bins.rd) <- targets$condition
-    avRdBin <- matrix(unlist(
-      lapply(unique(colnames(bins.rd)), 
-              function(x) 
-              rowMeans(bins.rd[,colnames(bins.rd) == x]))),  
-      nrow = nrow(bins.rd), 
-      byrow = FALSE)#OK
-    #################################################
-    colnames(genes.rd) <- targets$condition
-    avRdGen <- matrix(unlist(
-      lapply(unique(colnames(genes.rd)), 
-             function(x) rowMeans(genes.rd[,colnames(genes.rd) == x]))),  
+    type ) {
+  
+
+  # -------------------------------------------------------------------------- #
+  # Get densities for genes and bins
+  genes.rd <- .extractCountColumns( dfGen, targets ) / dfGen$effective_length 
+  bins.rd  <- .extractCountColumns( dfBin, targets ) / dfBin$length
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Calculates avg. bin dentity by condition
+  avRdBin <- matrix( unlist(
+          lapply( unique( targets$condition ), 
+              function( x ) { 
+                rowMeans( bins.rd[ , targets$condition == x] ) 
+              } ) ),  
+      nrow = nrow( bins.rd ), 
+      byrow = FALSE) 
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Calculates avg. gene dentity by condition
+  avRdGen <- matrix( unlist(
+          lapply( unique( targets$condition ), 
+              function(x) rowMeans(genes.rd[ , targets$condition == x]))),  
       nrow = nrow(genes.rd), 
       byrow = FALSE)#Ok
-    #####################################################
-    te <- match(dfBin$locus, rownames(dfGen)) 
-    gen.rdb <- avRdGen[te,]
-    bin.gen.rd <-  avRdBin/gen.rdb
-    bin.gen.rd[is.na(bin.gen.rd)] <- 0 
-    
-    if (type=="any")  { 
-      ii  <- rowSums(bin.gen.rd >= min)>0
-      dfBin <- dfBin[ii,]
-    } else{ 
-      ii <- rowSums(bin.gen.rd >= min )==ncol(bin.gen.rd)
-      dfBin <- dfBin[ii,]
-    }
-    return (dfBin)
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Calculates bin to gene read density ratio
+  gen.rdb <- avRdGen[ match( dfBin$locus, rownames( dfGen ) )  , ]
+  bin.gen.rd <-  avRdBin / gen.rdb
+  bin.gen.rd[ is.na( bin.gen.rd ) ] <- 0 
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Apply filter
+  if ( type == "any" )  { 
+    dfBin <- dfBin[ rowSums( bin.gen.rd >= min ) > 0 ,]
+  } else{ 
+    dfBin <- dfBin[ rowSums( bin.gen.rd >= min ) == ncol( bin.gen.rd ) ,]
   }
-##############################################################
-.normalizeByGenFeature <-
-  function(feature, gene, targets)
-  {
-    f.index <- match(feature$locus, rownames(gene)) #identify counts of each gene
-    counts.genes.f <- gene[f.index,] 
-    #have a matrix of gene counts, same dim as exons counts
-    #no matter about the size of the matrix
-    startg <-  ncol(counts.genes.f) - nrow(targets) +1
-    endg <- ncol(counts.genes.f)
-    
-    startf <- ncol(feature) - nrow(targets) +1
-    endf <- ncol(feature)
-    gen.mean.f <- rowMeans(counts.genes.f[,startg:endg]) #get the mean of gene counts  
-    #OK, independent of number of samples  
-    #round the division  
-    counts.f.N <- round(as.matrix(feature[,startf:endf]) / 
-                        as.matrix(counts.genes.f[,startg:endg]) *gen.mean.f) #round the division
-    counts.f.N[is.na(counts.f.N)] <- 0 # we have to remove NAs
-    counts.f.N[is.infinite(counts.f.N)] <- 0 #we also have to remove Inf values
-    #correct
-    feature.counts.n<-cbind(feature[,1:startf -1], counts.f.N)
-    #have a df equal to original df counts (without norm)
-    return(feature.counts.n)
+  # -------------------------------------------------------------------------- #
+  
+return (dfBin)
+}
+
+# ---------------------------------------------------------------------------- #
+.normalizeByGenFeature <- function( feature, gene, targets, priorCounts = 0 ) {
+
+  # Search the column with the gene name in the features 
+  colLocus <- match( c( "gene", "locus" ), colnames( feature ) )
+  colLocus <- colLocus[ ! is.na( colLocus ) ][1]
+  
+  # Repeat gene rows by the number of bins in that gene 
+  f.index <- match( feature[ , colLocus ], rownames(gene) ) 
+  counts.genes.f <- gene[f.index,]
+
+  # Extract count data
+  counts.genes.f  <- .extractCountColumns( counts.genes.f, targets)
+  counts.features <- .extractCountColumns( feature, targets) 
+  
+  # Calculate mean of gene counts 
+  gen.mean.f <- rowMeans( counts.genes.f )   
+  
+  # Apply normalization
+  normalizedCounts <- round( ( as.matrix(  counts.features ) + priorCounts ) / 
+                       ( as.matrix( counts.genes.f ) + priorCounts ) * 
+                       ( gen.mean.f + priorCounts ) )
+  
+  # Set invalid results to zero
+  normalizedCounts[ is.na( normalizedCounts ) | is.infinite( normalizedCounts) ] <- 0 
+  
+  # Create result dataframe
+  normalizedFull <- cbind( .extractDataColumns( feature , targets ) , normalizedCounts )
+
+  return( normalizedFull )
+}
+# ---------------------------------------------------------------------------- #
+
+
+.binsDU <- function (
+      df,
+      dfGen,
+      targets,                   
+      ignoreExternal= TRUE, 
+      ignoreIo = TRUE, 
+      ignoreI = FALSE,
+      contrast = NULL,
+      forceGLM = FALSE,
+      mOffset  = NULL,
+      priorCounts = 0 ) {
+
+  # -------------------------------------------------------------------------- #
+  # Filtrar bins de acuerdo de diferentes criterios
+  df = df[ ! ignoreExternal | df$event != "external" ,] 
+  df = df[ ! ignoreIo | df$feature != "Io" ,] 
+  df = df[ ! ignoreI | df$feature != "I" ,] 
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Normalize bins by gen or filter offsets
+  
+  # Comment to disable offset usage
+#  if( is.null( mOffset ) ){
+#    df <- .normalizeByGenFeature( feature=df, gene=dfGen, targets = targets, 
+#        priorCounts = priorCounts )
+#  } else {
+#    mOffset <- mOffset[ rownames( df ), ]
+#  }
+  # Comment to disable offset usage
+  df <- .normalizeByGenFeature( feature=df, gene=dfGen, targets = targets, 
+      priorCounts = priorCounts )
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # perform edgeR extact or glm test 
+  et <- .edgeRtest( df, dfGen, targets, mOffset, contrast, forceGLM )
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Build result dataframe
+  bin.fdr <- p.adjust( et$table$PValue, method="BH" )
+  logFC   <- et$table$logFC
+  pvalue  <- et$table$PValue
+  
+  cols <- match( rownames( targets ), colnames( df ) )
+
+  splicing_full <- data.frame ( df[ , -cols ],
+      logFC, 
+      pvalue,
+      bin.fdr,
+      stringsAsFactors = FALSE )
+  
+  rownames( splicing_full ) <- rownames( df )
+  
+  return( splicing_full )
+  # -------------------------------------------------------------------------- #
+  
+}
+
+.junctionsDU_SUM <- function( df, 
+                              dfGen,
+                              targets, 
+                              mOffset = NULL,
+                              contrast = NULL,
+                              forceGLM = FALSE,
+                              priorCounts = 0 ) {
+
+  # -------------------------------------------------------------------------- #
+  # Inner function to compute junction ratio
+  jratio <- function( junctions ) {
+    junctions[ is.na( junctions ) ] <- 0 
+    return( junctions[1] / ( junctions[1] + junctions[2] ) )
   }
-#################################################################
-.binsDU <-
-  function(df,
-           targets, 
-           dfGen,
-           ignoreExternal=NULL, 
-           pair,
-           group)
-  {
-    df <- .normalizeByGenFeature(feature=df, gene=dfGen, targets) #OK  
-    if (ignoreExternal==TRUE)
-    {
-      df=df[df$event!="external",] 
-    }
-    countsSt <- ncol(df)-nrow(targets)+1
-    er <- DGEList(counts=df[,countsSt:ncol(df)], 
-                  group=group)
-    er <- calcNormFactors(er)
-    er <- estimateCommonDisp(er)
-    er <- estimateTagwiseDisp(er)
-    et <- exactTest(er, pair=pair)
-    fdr.bin <- p.adjust(et$table$PValue, method="BH")
-    
-    logFC <- et$table$logFC
-    pvalue <- et$table$PValue
-    bin.fdr <- fdr.bin
-    splicing_full <- data.frame (df[,-(countsSt:ncol(df))],
-                                logFC, 
-                                pvalue,
-                                bin.fdr,
-                                stringsAsFactors=FALSE)
-    rownames(splicing_full) <- rownames(df)
-    return(splicing_full)
+  # -------------------------------------------------------------------------- #
+  
+  if( is.null( mOffset ) ) {
+    df <- .normalizeByGenFeature( feature=df, gene=dfGen, targets, priorCounts )
   }
-##################################################################
-.junctionsDU_SUM <- function(df, 
-                          targets, 
-                          genesde, 
-                          pair, 
-                          group,
-                          dfGen)  
-{
-  ######################################################
-    jratio<-function(x){
-    x[is.na(x)] <- 0 # we have to remove NAs
-    res<-x[1]/(x[1]+x[2])
-    return(res)  }
-  ##############################################################################################################3  
-  #normalize:
-  colnames(df)[2] <- "locus"
-  df<-.normalizeByGenFeature(feature=df, gene=dfGen, targets) #OK  
-  colnames(df)[2] <- "gene"
-  countsSt <- ncol(df) - nrow(targets) + 1
-  er <- DGEList(counts=df[,countsSt:ncol(df)],
-                group=group)
-  er <- calcNormFactors(er)
-  er <- estimateCommonDisp(er)
-  er <- estimateTagwiseDisp(er)
-  et <- exactTest(er, pair=pair)
-  fdr <- p.adjust(et$table$PValue, method="BH")
+  
+  et <- .edgeRtest( df, dfGen, targets, mOffset, contrast, forceGLM )
+  
+  fdr <- p.adjust( et$table$PValue, method="BH" )
   logFC <- et$table$logFC
   pvalue <- et$table$PValue
-  ############those sharing 3', 5', total etc#################
-  jranges <- .createGRangesExpJunctions(rownames(df))
-  if (packageVersion("IRanges")<2.6) 
-  {
-    j.start <- findOverlaps(jranges, ignoreSelf=TRUE, ignore.redundant=FALSE,
-                            type="start")  
-  }
-  else
-  {
-    
-  j.start <- findOverlaps(jranges, drop.self=TRUE, drop.redundant=FALSE,
-                          type="start")
-  }
-  jjstart <- as.data.frame(j.start)
+  
+  group<- targets$condition
+  
+  jranges <- .createGRangesExpJunctions( rownames( df ) )
+
+# TODO: ¿ Es Necesario seguir preguntando por una versión vieja de IRanges ?
+# Además, las dos llamadas a la versión vieja llaman diferente al parámetro
+# ignore.redundant ( en la otra llamada es ignoreRedundant )
+#  if ( packageVersion("IRanges") < 2.6) {
+#    j.start <- findOverlaps( jranges, ignoreSelf=TRUE, ignore.redundant=FALSE,
+#        type="start")  
+#  } else {
+    j.start <- findOverlaps( jranges, drop.self=TRUE, drop.redundant=FALSE,
+        type="start")
+#  }
+  
+  jjstart <- as.data.frame( j.start )
+  
   jjstart$queryHits <- names(jranges[jjstart$queryHits])
   jjstart$subjectHits <- names(jranges[jjstart$subjectHits])
-  shareStart <- data.frame(aggregate(subjectHits ~ queryHits, 
-                                     data = jjstart, paste, collapse=";")) 
-  #counts matrix
-  start <- ncol(df) - nrow(targets) + 1 #ok
-  end <- ncol(df)#ok
-  #aca no hay cuentas solo recupero los counts usando el indexado de subjectHits
+  shareStart <- data.frame( aggregate( subjectHits ~ queryHits, 
+          data = jjstart, paste, collapse=";"))
+  
+  
+  start <- ncol( df ) - nrow(targets) + 1 
+  end   <- ncol( df ) 
+
   dfCountsStart <- data.frame( names=jjstart$queryHits, 
-                            df[jjstart$subjectHits,start:end],
-                            row.names=NULL) #recover counts
-  #tiene como names al query y como counts todos los subjects que dan con ese query. 
-  #en teoria podria haber mas de 1 sbject, por eso hace el aggregate-
-  #si es solo 1 hit deberian coincidir, cruzandose
-  #aca hace el agregate y tengo los counts de todas las junturas 
-  #que comparten start con esa menos ella
+      df[ jjstart$subjectHits, start:end],
+      row.names=NULL) 
+  
   dfSumStart <- data.frame(aggregate(. ~ names, data = dfCountsStart, sum))
   sumJ <- paste(colnames(dfSumStart), "jsum", sep=".")
   colnames(dfSumStart) <-  sumJ
   rownames(dfSumStart) <- dfSumStart$names.jsum
+  
   dfSumStart$names.jsum <- NULL
-  #armo un nuevo data frame
+
   dffStart <- data.frame(matrix(NA, nrow =  nrow(df), ncol = ncol(dfSumStart)) )
   rownames(dffStart) <- rownames(df)
-  colnames(dffStart) <- colnames(dfSumStart)
-  mSumStart <- match(row.names(dfSumStart), row.names(dffStart)) 
-  #reordeno el dffSumStart de acuerdo al df
-  dffStart[mSumStart,] <-  dfSumStart#OK
+  colnames(dffStart) <- colnames(dfSumStart)  
+  mSumStart <- match( row.names(dfSumStart), row.names(dffStart)) 
+  
+  dffStart[mSumStart,] <-  dfSumStart
   dffStart[is.na(dffStart)] <- 0
+  
   mbin_start_hit <- match(shareStart$queryHits, row.names(dffStart))
   #aca reacomodo el bin_start_hit con el indexado de dffStart
   bin_start_hit <- as.character(rep("-", nrow(dffStart)) )
   bin_start_hit[mbin_start_hit] <- shareStart$subjectHits
   ################################################
-  ratioStart <- data.frame(df[,countsSt:ncol(df)],
-                         dffStart)
-  colnames(ratioStart) <- rep(rownames(targets),2)
+  
+  cols <- match( rownames( targets ),colnames(df))
+  
+  
+  ratioStart <- data.frame( df[,cols],dffStart)
+  colnames(ratioStart) <- rep(rownames( targets ),2)
   #aca hay que armar un df itnermedio con la suma por condicion:
-  ff <- rep(targets$condition,2)
-  colnames(ratioStart) <- paste(ff, rep(1:2,each=length(targets$condition)))
+  ff <- rep(group,2)
+  colnames(ratioStart) <- paste(ff, rep(1:2,each=length(group)))
   dfSum <- t(apply(ratioStart, 1, function(x){tapply(as.numeric(x), 
-                                                   INDEX=colnames(ratioStart), 
-                                                   sum)}))
-  colnames(dfSum) <- rep(unique(targets$condition), each=2)
+                INDEX=colnames(ratioStart), 
+                sum)}))
+  colnames(dfSum) <- rep(unique(group), each=2)
   
   jratioStartRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
-                                                       INDEX=colnames(dfSum), 
-                                                       jratio )}))
-  ################################################
-  if (packageVersion("IRanges")<2.6) 
-  {
-    j.end <- findOverlaps(jranges, 
-                       ignoreSelf=TRUE,
-                       ignoreRedundant=FALSE,
-                       type="end")
-    
-  }
-  else
-  {
-  j.end <- findOverlaps(jranges, 
-                     drop.self=TRUE,
-                     drop.redundant=FALSE,
-                     type="end")
-  }
+                INDEX=colnames(dfSum), 
+                jratio )}))
+
+#  if (packageVersion("IRanges")<2.6) { 
+#    j.end <- findOverlaps(jranges, 
+#        ignoreSelf=TRUE,
+#        ignoreRedundant=FALSE,
+#        type="end")
+#    
+#  } else {
+    j.end <- findOverlaps( jranges, 
+        drop.self = TRUE,
+        drop.redundant = FALSE,
+        type = "end" )
+#  }
+
   jjend <- as.data.frame(j.end)
   jjend$queryHits <- names(jranges[jjend$queryHits])
   jjend$subjectHits <- names(jranges[jjend$subjectHits])
-  shareEnd <- data.frame(aggregate(subjectHits ~ queryHits, 
-                                data = jjend, paste, collapse=";")) 
+  shareEnd <- data.frame( aggregate( subjectHits ~ queryHits, 
+          data = jjend, paste, collapse=";") ) 
   dfCountsEnd <- data.frame( names=jjend$queryHits, 
-                          df[jjend$subjectHits,start:end],
-                          row.names=NULL) #recover counts
+      df[jjend$subjectHits,start:end],
+      row.names=NULL) #recover counts
   dfSumEnd <- data.frame(aggregate(. ~ names, data = dfCountsEnd, sum))   
   sumJ <- paste(colnames(dfSumEnd), "jsum", sep=".")
   colnames(dfSumEnd) <- sumJ
   rownames(dfSumEnd) <- dfSumEnd$names.jsum
   dfSumEnd$names.jsum <- NULL
   dffEnd =data.frame(matrix(NA, nrow =  nrow(df), 
-                            ncol = ncol(dfSumEnd)) )
+          ncol = ncol(dfSumEnd)) )
   rownames(dffEnd) <- rownames(df)
   colnames(dffEnd) <- colnames(dfSumEnd)
   ########################################################################
@@ -312,25 +404,132 @@
   bin_end_hit <- rep("-", nrow(dffEnd))
   bin_end_hit[mbin_end_hit] <- shareEnd$subjectHits
   ########################################################################
-  ratioEnd <- data.frame(df[,countsSt:ncol(df)],dffEnd)
-  ff <- rep(targets$condition,2)
-  colnames(ratioEnd) <- paste(ff, rep(1:2,length(targets$condition)))
+  
+  ratioEnd <- data.frame(df[,cols],dffEnd)
+  ff <- rep(group,2)
+  colnames(ratioEnd) <- paste(ff, rep(1:2,length(group)))
   dfSum <- t(apply(ratioEnd, 1, function(x){tapply(as.numeric(x), 
-                                                 INDEX=colnames(ratioEnd), sum  )}))
-  colnames(dfSum) <- rep(unique(targets$condition),each=2)
+                INDEX=colnames(ratioEnd), sum  )}))
+  colnames(dfSum) <- rep(unique(group),each=2)
   jratioEndRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
-                                                  INDEX=colnames(dfSum), jratio )}))
-  #########################################################################
+                INDEX=colnames(dfSum), jratio )}))
+
+  
   et_merge <- data.frame(df,                       
-                       logFC,
-                       pvalue, 
-                       fdr,
-                       bin_start_hit,
-                       dffStart,
-                       jratioStartRes,
-                       bin_end_hit,
-                       dffEnd,
-                       jratioEndRes )
-return(et_merge)
+      logFC,
+      pvalue, 
+      fdr,
+      bin_start_hit,
+      dffStart,
+      jratioStartRes,
+      bin_end_hit,
+      dffEnd,
+      jratioEndRes )
+  return(et_merge)
+  
 }
-##################################################
+
+# ---------------------------------------------------------------------------- #
+# Calculates the matrix of offset values for normalization
+# TODO: ¿Qué es el valor 10^-4 que aparece, se puede pasar como parámetro?
+.getOffsetMatrix <- function( df, dfGen, targets, 
+    offsetAggregateMode = c( "geneMode","binMode" )[2], 
+    offsetUseFitGeneX = TRUE) {
+  
+  locus  <- df[,"locus"]
+  
+  if( offsetAggregateMode=="geneMode" ) {
+    if(offsetUseFitGeneX){
+      countData = dfGen[,rownames(targets)]
+      
+      yg <- DGEList( counts = countData, 
+                     group  = targets$condition, 
+                     genes  = data.frame( locus = rownames(countData) ) )
+      
+      #filter lowcount genes
+      keep <- rowSums(cpm(yg)>1) >= 2
+      yg <- yg[keep, , keep.lib.sizes=FALSE]
+      
+      yg     <- calcNormFactors(yg)
+      fc     <- targets$condition
+      design <- model.matrix(~0+fc)
+      yg     <- estimateDisp(yg,design)
+      fitg   <- glmFit(yg,design)
+      maux   <- fitg$fitted.values + 10^-4
+    } else {
+      maux   <- dfGen[,rownames(targets)] + 10^-4
+    }
+  } else {
+    a <- by( data = df[,c("feature",rownames(targets))],
+             INDICES = as.factor( locus ),
+             FUN = function(x){ 
+               apply( x [x[,1] == "E", 2:ncol(x) ], 2 , sum )
+             })
+    maux<- matrix(unlist(a),byrow=TRUE,ncol=nrow(targets))+10^-4
+    rownames(maux)<-names(a)
+    colnames(maux)<-names(a[[1]])
+  }
+  mOffset <- do.call( rbind, list( A = maux[ locus ,] ) )
+  rownames( mOffset )<-rownames(df)
+  return(mOffset)
+}
+
+.setDefaultOffsets <- function ( aDGEList , mOffset) {
+	logNi <- apply( aDGEList$samples[,c("lib.size","norm.factors")],1,
+			function(x){ log( prod( x ) ) } )
+	
+	# TODO: Check Alternative code 
+	# logNi <- log( aDGEList$samples[,c("lib.size")] * aDGEList$samples[,"norm.factors"] )
+	
+	aDGEList$offset <- log(mOffset) + matrix( rep( logNi, nrow( mOffset )), 
+			byrow = TRUE, ncol = length( logNi ) )
+	return ( aDGEList )
+}
+
+.edgeRtest <- function( 
+    df,
+    dfGen,
+    targets,
+    mOffset = NULL,
+    contrast = NULL,
+    forceGLM = FALSE ) {
+  
+  cols <- match( rownames( targets ), colnames( df ) )
+  
+  group <- targets$condition
+  
+  if( is.null( contrast ) ) constrast <- .getDefaultContrasts(group)
+  
+  er <- DGEList( counts  = df[,cols],
+                 samples = targets,
+                 group   = group )
+  
+  er <- calcNormFactors(er)
+  
+  justTwoConditions <- sum( contrast != 0 ) == 2
+  
+  # TODO: Forzar GLM no tiene efecto si se pasa un offset. 
+  if( ! forceGLM & is.null( mOffset ) & justTwoConditions ){
+
+    er   <- estimateDisp( er )
+    pair <- which( contrast != 0 )
+    testResult   <- exactTest( er, pair = pair )
+    
+#    if( verbose ) message( "ExactTest... done\n" )
+    
+  } else {
+    
+    if( ! is.null( mOffset ) ) er <- .setDefaultOffsets( er, mOffset ) 
+    
+    design     <- model.matrix( ~0 + group, data = er$samples )
+    er         <- estimateDisp( er, design = design )      
+    glf        <- glmFit( er, design = design )  
+    testResult <- glmLRT( glf, contrast = contrast )
+    
+#    if( verbose ) message( "glmLRT... done\n" )
+
+  } 
+  return( testResult )
+}
+
+
