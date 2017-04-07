@@ -6,7 +6,7 @@ Summarize read overlaps
 \description{
 Summarize read overlaps against all feature levels }
 \usage{
-readCounts(features, bam, cores, l, maxISize, minAnchor)
+readCounts(features, bam, targets,cores,  l, maxISize, minAnchor)
 }
 \arguments{
 \item{features}{
@@ -15,9 +15,14 @@ An object of class ASpliFeatures. It is a list of GRanges at gene, bin and junct
 \item{bam}{
 List of bam files
 }
+\item{targets}{
+A dataframe containing sample, bam and condition columns 
+}
+
 \item{l}{
 Read length of sequenced library. It is used for compute E1I and IE2 read summarization
 }
+ 
 \item{maxISize}{maximum intron expected size. Junctions longer than this size will be dicarded  }
 \item{cores}{Number of cores to use. Default 1}
 \item{minAnchor}{ Percentage of read thath sould be aligned in exon-intron boundary  }
@@ -44,7 +49,7 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, l=100L, maxISize=50000)#OK
+counts <- readCounts(features, bam, targets, l=100L, maxISize=50000)#OK
 writeCounts(counts,output.dir="only_counts")
 }
 
