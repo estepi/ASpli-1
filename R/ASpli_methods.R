@@ -217,7 +217,13 @@ setMethod(
 
 setGeneric (
   name= "AsDiscover",
-  def = function( counts, ... ) standardGeneric("AsDiscover") )
+  def = function( counts, 
+      targets, 
+      features, 
+      bam, 
+      readLength, 
+      threshold = 5, 
+      cores = 1 ) standardGeneric("AsDiscover") )
 
 setMethod(
     f = "AsDiscover",
