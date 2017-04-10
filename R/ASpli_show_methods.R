@@ -162,15 +162,6 @@ setMethod( f = "junctionsDU", signature = "ASpliDU",
 setGeneric(  name = "junctionsDU<-", def = function( x, value ) standardGeneric("junctionsDU<-") )
 setReplaceMethod( f = "junctionsDU", signature = c( "ASpliDU", 'data.frame'), 
     definition = function( x, value ){ x@junctions <- value; return( x ) } )
-
-setGeneric(  name = "spliceDU", def = function( x ) standardGeneric("spliceDU") )
-setMethod( f = "spliceDU", signature = "ASpliDU", 
-    definition = function( x ){ x@splice })
-
-setGeneric(  name = "spliceDU<-", def = function( x, value ) standardGeneric("spliceDU<-") )
-setReplaceMethod( f = "spliceDU", signature = c( "ASpliDU", 'data.frame'), 
-    definition = function( x, value ){ x@splice <- value; return( x ) } )
-
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -241,11 +232,6 @@ setMethod('show', 'ASpliDU', function( object ) {
         cat("Junctions DU:", 
             dim(object@junctions)[1],"junctions analysed.",
             "Access using junctionsDU(object)")
-      }
-      if ( containsSplice( object ) ) {
-        cat("Splice DU:", 
-            dim(object@junctions)[1],"splice events analysed.",
-            "Access using spliceDU(object)")
       }
     })
 # ---------------------------------------------------------------------------- #
