@@ -192,6 +192,10 @@
   countData <- countsb( counts )
   countData <- countData[ countData[,'feature'] != "Io", ]
   
+  group <- targets$condition
+  
+  if( is.null( contrast ) ) constrast <- .getDefaultContrasts(group)
+  
   y <- DGEList( counts = .extractCountColumns( countData, targets ),
       group = targets$condition,
       genes = data.frame( 
@@ -208,15 +212,10 @@
   
   design <- model.matrix( ~targets$condition )
   y      <- estimateDisp( y, design )
-  # NOTE from glmFit help page:
-  # coef      integer or character vector indicating which coefficients of 
-  # the linear model are to be tested equal to zero. Values must be columns 
-  # or column names of design. Defaults to the last coefficient. Ignored if 
-  # contrast is specified.
   fit    <- glmFit( y, design, contrast )
   captured <- capture.output(
       ds <- diffSpliceDGE( 
-          fit, coef = 2, geneid = "locus", exonid = "exonid" ) )
+          fit, contrast = contrast, geneid = "locus", exonid = "exonid" ) )
   tsp    <- topSpliceDGE( ds, test = "exon", FDR = 1, number = INF )
   
   du@bins <- tsp
