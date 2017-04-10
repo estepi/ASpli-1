@@ -29,8 +29,7 @@ setClass( Class = "ASpliDU",
     representation = representation(
         genes = "data.frame",
         bins = "data.frame",
-        junctions = "data.frame",
-        splice = "data.frame" ))
+        junctions = "data.frame" ))
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -477,16 +476,18 @@ setMethod(
 setGeneric (
     name = "DUreport",
     def = function( counts, 
-        counts, 
         targets, 
         minGenReads  = 10,
         minBinReads  = 5,
         minRds = 0.05,
+        offset = FALSE,
+        offsetAggregateMode = c( "geneMode", "binMode" )[2],
+        offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE,
         ignoreExternal = TRUE,
         ignoreIo = TRUE, 
-        ignoreI = FALSE
+        ignoreI = FALSE  
       ) standardGeneric("DUreport") )
 
 #setGeneric (
@@ -496,145 +497,50 @@ setGeneric (
 setMethod(
   f = "DUreport",
   signature = "ASpliCounts",
-  definition = function( 
-      counts, 
+  definition = function( counts, 
       targets, 
       minGenReads  = 10,
       minBinReads  = 5,
       minRds = 0.05,
-      # ---------------------------------------------------------------------- #
-      # Comment to disable offset usage 
-      #offset = FALSE,
-      #offsetAggregateMode = c( "geneMode", "binMode" )[2],
-      #offsetUseFitGeneX = TRUE,
-      # ---------------------------------------------------------------------- #
+      offset = FALSE,
+      offsetAggregateMode = c( "geneMode", "binMode" )[2],
+      offsetUseFitGeneX = TRUE,
       contrast = NULL,
       forceGLM = FALSE,
       ignoreExternal = TRUE,
       ignoreIo = TRUE, 
       ignoreI = FALSE  
-      # ---------------------------------------------------------------------- #
-      # Comment to disable priorcounts usage in bin normalization 
-      # , priorCounts = 0 
-      # ---------------------------------------------------------------------- #
-     ) {
-    
-    # Create result object                   
-    du <- new( Class="ASpliDU" )
-  
-    # Generate conditions combining experimental factors
-    targets <- .condenseTargetsConditions( targets ) 
-        
-    # ------------------------------------------------------------------------ #
-    # Filter genes and calculates differential usage of genes
-    df0 <- countsg( counts )
-    
-    dfG0 <- .filterByReads( 
-        df0 = df0,
-        targets = targets,
-        min = minGenReads,
-        type = "any" )
-    
-    dfGen <- .filterByRdGen(
-        df0 = dfG0,
-        targets = targets,
-        min = minRds,
-        type = "any" )
-    
-    genesde <- .genesDE( 
-        df=dfGen, 
-        targets = targets,
-        contrast = contrast,
-        forceGLM = forceGLM )
-   
-    message("Genes DE completed")
-  
-    du@genes <- genesde
-    # ------------------------------------------------------------------------ #
-
-    # ------------------------------------------------------------------------ #
-    # Filter bins and calculates differential usage of bins
-    dfG0 <- .filterByReads(
-        df0 = df0,
-        targets = targets,
-        min = minGenReads,
-        type = "all" )
-    
-    dfGen <- .filterByRdGen( df0 = dfG0,
-        targets = targets,
-        min = minRds,
-        type = "all" )
-    
-    dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
-    
-    if( ignoreIo ) dfBin <- dfBin[dfBin[,"feature"]!="Io",]
-    
-    df1 <- .filterByReads(
-        df0=dfBin,
-        targets=targets, 
-        min=minBinReads,
-        type="any" )
-    
-    df2 <- .filterByRdBinRATIO(
-        dfBin=df1,
-        dfGen=dfGen,
-        targets=targets, 
-        min=minRds,
-        type="any" )
-
-    # ------------------------------------------------------------------------ # 
-    # Comment to disable offser usage. 
-#    if( offset ) {
-#      mOffset <- .getOffsetMatrix(
-#          dfBin,
-#          dfGen,
-#          targets,
-#          offsetAggregateMode = offsetAggregateMode,
-#          offsetUseFitGeneX   = offsetUseFitGeneX )
-#      mOffset <- mOffset[ rownames( df2 ), ]
-#    } else {
-#      mOffset <- NULL
-#    }
-    # ------------------------------------------------------------------------ # 
-    
-    binsdu <- .binsDU(
-        df = df2,
-        dfGen = dfGen,
-        targets = targets,
-        # -------------------------------------------------------------------- # 
-        # Comment to disable offser usage. 
-#        mOffset = mOffset,
-        mOffset = NULL,
-        # -------------------------------------------------------------------- # 
-        contrast = contrast,
-        forceGLM = forceGLM,
-        ignoreExternal = ignoreExternal,
-        ignoreIo = ignoreIo, 
-        ignoreI = ignoreI
-    # -------------------------------------------------------------------- # 
-    # Comment to disable offser usage. 
-#        mOffset = mOffset,
-    , priorCounts = 0 
-#    , priorCounts = priorCounts 
-    # -------------------------------------------------------------------- # 
-
-) 
-    
-    du@bins <- binsdu
-    
-    message("Bins DU completed")
-
-    return(du)
+    ) { 
+      .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
+          offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM = FALSE,
+        ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE)
   }
 )
 
+setGeneric( name = 'DUreportBinSplice',
+    def = function( counts, targets, minGenReads  = 10,
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE ) 
+      standardGeneric( 'DUreportBinSplice'))
+
+setMethod( 
+    f = 'DUreportBinSplice',
+    signature = 'ASpliCounts',
+    definition = function(counts, targets, minGenReads  = 10,
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE  ) {
+      .DUreportBinSplice( counts, targets, minGenReads, minRds, contrast, 
+          forceGLM ) 
+    })
+
 setGeneric( name = "junctionDUReport",
-    def = function ( counts,
+    def = function (  counts, 
         targets, 
         appendTo = NULL, 
         minGenReads = 10,
         minRds = 0.05,
         threshold = 5,
+        offset   = FALSE,
+        offsetAggregateMode = c("geneMode","binMode")[2],
+        offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE 
         ) standardGeneric("junctionDUReport") )
@@ -649,12 +555,9 @@ setMethod(
         minGenReads = 10,
         minRds = 0.05,
         threshold = 5,
-        # -------------------------------------------------------------------- # 
-        # Comment to disable offser usage.         
-#        offset   = FALSE,
-#        offsetAggregateMode = c("geneMode","binMode")[2],
-#        offsetUseFitGeneX = TRUE,
-        # -------------------------------------------------------------------- # 
+        offset   = FALSE,
+        offsetAggregateMode = c("geneMode","binMode")[2],
+        offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE 
         # -------------------------------------------------------------------- #
@@ -689,30 +592,23 @@ setMethod(
       
       df <- df[ df$multipleHit == "-",]
       
-      # ---------------------------------------------------------------------- # 
-      # Comment to disable offser usage.         
-#      if( offset ){
-#        warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
-#        mOffset <- getOffsetMatrix( 
-#            dfBin, 
-#            dfGen,
-#            targets,
-#            offsetAggregateMode = offsetAggregateMode,
-#            offsetUseFitGeneX= offsetUseFitGeneX )
-#      } else {
-#        mOffset <- NULL
-#      }
-      # ---------------------------------------------------------------------- # 
+      if( offset ){
+        warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
+        mOffset <- getOffsetMatrix( 
+            dfBin, 
+            dfGen,
+            targets,
+            offsetAggregateMode = offsetAggregateMode,
+            offsetUseFitGeneX= offsetUseFitGeneX )
+      } else {
+        mOffset <- NULL
+      }
       
       junctionsdeSUM <- .junctionsDU_SUM(
           df = df,
           dfGen = dfGen,
           targets = targets,
-          # ------------------------------------------------------------------ # 
-          # Comment to disable offser usage.         
-#          mOffset = mOffset,
-          mOffset = NULL,
-          # ------------------------------------------------------------------ # 
+          mOffset = mOffset,
           contrast = contrast,
           forceGLM = forceGLM 
           # ------------------------------------------------------------------ # 
@@ -728,51 +624,6 @@ setMethod(
       
       return( du )
     } )
-
-    
-setGeneric( name = "spliceDUReport",
-    def = function( counts, targets, fdr = 0.1, number = 10000, 
-        appendTo = NULL )standardGeneric( 'spliceDUReport' ) )
-
-setMethod( f = "spliceDUReport",
-    signature( 'ASpliCounts'),
-    definition = function( counts, targets, fdr = 0.1, number = 10000, appendTo = NULL ) {
-      
-      if ( is.null( appendTo ) ) du <- new( Class = 'ASpliDU' ) else du <- appendTo 
-      
-      targets <- .condenseTargetsConditions( targets )
-      countData <- countsb( counts )
-      countData <- countData[ countData[,'feature'] != "Io", ]
-      
-      y <- DGEList( counts = .extractCountColumns( countData, targets ),
-          group = targets$condition,
-          genes = data.frame( 
-              locus = countData$locus, 
-              bin   = rownames( countData ) ) )
-      
-      y <- DGEList( counts = .extractCountColumns( countData, targets ),
-          group = targets$condition,
-          genes = .extractDataColumns(countData, targets) )       
-      
-      keep <- rowSums( cpm( y ) > 1) >= 2
-      y <- y[ keep, , keep.lib.sizes = FALSE ]
-      y <- calcNormFactors( y )
-      
-      design <- model.matrix( ~targets$condition )
-      y      <- estimateDisp( y, design )
-      fit    <- glmFit( y, design )
-      captured <- capture.output(
-          ds <- diffSpliceDGE( 
-              fit, coef = 2, geneid = "locus", exonid = "exonid" ) )
-      tsp    <- topSpliceDGE( ds, test = "exon", FDR = fdr, number = number )
-      
-      spliceDU(du) <- tsp
-      
-      return( du )
-    } )
-
-
-
 
     
 # TODO: Qué pasa con las funciones de DEXSeq con las nuevas modificaciones de
@@ -869,16 +720,6 @@ setMethod( f = 'containsJunctions',
       nrow( junctionsDU( du ) ) > 0
     } )
 
-
-setGeneric( name = 'containsSplice', 
-    def = function ( du, ... ) standardGeneric("containsSplice") )
-
-setMethod( f = 'containsSplice', 
-    signature = "ASpliDU",
-    definition = function ( du ) {
-      nrow( spliceDU( du ) ) > 0
-    } )
-
 setGeneric( name = "writeDU", 
     def = function ( du, output.dir="du"  ) standardGeneric( "writeDU" ) )
 
@@ -899,11 +740,6 @@ setMethod(
       if ( containsJunctions( du ) ) {
         junctionsFile <- file.path( output.dir, "junctions", "junction.du.tab")
         paths <- append( paths , list( junctionsFile ) )
-      }
-      
-      if ( containsSplice( du ) ) {
-        spliceFile <- file.path( output.dir, "splice", "splice.du.tab")
-        paths <- append( paths , list( spliceFile ) )
       }
       
       file.exists( output.dir ) || dir.create( output.dir )
@@ -935,11 +771,7 @@ setMethod(
         write.table( junctionsDU( du ), junctionsFile, sep = "\t", quote = FALSE, 
             col.names=NA )
       }
-      
-      if ( containsSplice( du ) ) {
-        write.table( spliceDU( du ), spliceFile, sep = "\t", quote = FALSE, 
-            col.names=NA )
-      }
+
       
     }
 )

@@ -44,13 +44,12 @@ exportMethods(
     "genesDE",
     "binsDU",
     "junctionsDU",
-    "spliceDU",
+    "DUreportBinSplice",
     "show",
     "junctionDUReport",
-    "spliceDUReport",
     "containsGenesAndBins",
-    "containsJunctions"
-    "plotBins",
+    "containsJunctions",
+    "plotBins"
     
 )
 exportClasses(
