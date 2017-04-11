@@ -36,10 +36,8 @@ library(RNAseqData.HNRNPC.bam.chr14)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, targets, l=100L, maxISize=50000);
-group <- factor(c(rep("CT",4),rep("KD",4)))
-pair <- c("CT","KD")  
-as <- AsDiscover(counts, targets, features, bam, threshold=5, l=100, pair=pair)
+counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+as <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 altPSI(as)
 esPSI(as)
 irPIR(as)
