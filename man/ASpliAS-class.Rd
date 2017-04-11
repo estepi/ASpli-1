@@ -25,7 +25,7 @@ Results of PSI and PIR using experimental junctions
   }
 }
 \author{
-Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz
+Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
 }
 \seealso{\code{ 
 Methods: \link{AsDiscover}, Accesors: \link{irPIR},\link{esPSI},\link{junctionsPIR},\link{junctionsPSI}
