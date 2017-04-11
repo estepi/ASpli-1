@@ -55,9 +55,22 @@
   
   # ------------------------------------------------------------------------ #
   # Filter bins and calculates differential usage of bins 
-  du <- .DUReportBins( du, counts, targets, minGenReads, minBinReads, minRds,
-        offsetAggregateMode, offsetUseFitGeneX, offset, contrast, forceGLM,
-        ignoreExternal, ignoreIO, ignoreI )
+  
+    
+  du <- .DUReportBins( du, 
+                       counts, 
+                       targets, 
+                       minGenReads, 
+                       minBinReads, 
+                       minRds,
+                       offsetAggregateMode, 
+                       offsetUseFitGeneX, 
+                       offset, 
+                       contrast, 
+                       forceGLM, 
+                       ignoreExternal, 
+                       ignoreIo, 
+                       ignoreI ) 
   message("Bins DE completed")
   # ------------------------------------------------------------------------ #
   
@@ -230,7 +243,7 @@
   cropped <- .extractCountColumns( df0, targets )
  
   # Modify working dataframe with pair being compared
-  # TODO: pair no se requiere más, ¿modificar por constrastes?
+  # TODO: pair no se requiere mas, modificar por constrastes?
   if ( is.null( pair ) ) {
     pair <- as.character( unique( targets$condition ) )
   }
@@ -497,8 +510,8 @@ return (dfBin)
   
   jranges <- .createGRangesExpJunctions( rownames( df ) )
 
-# TODO: ¿ Es Necesario seguir preguntando por una versión vieja de IRanges ?
-# Además, las dos llamadas a la versión vieja llaman diferente al parámetro
+# TODO:  Es Necesario seguir preguntando por una version vieja de IRanges ?
+# Ademas, las dos llamadas a la version vieja llaman diferente al parametro
 # ignore.redundant ( en la otra llamada es ignoreRedundant )
 #  if ( packageVersion("IRanges") < 2.6) {
 #    j.start <- findOverlaps( jranges, ignoreSelf=TRUE, ignore.redundant=FALSE,
@@ -627,7 +640,7 @@ return (dfBin)
 
 # ---------------------------------------------------------------------------- #
 # Calculates the matrix of offset values for normalization
-# TODO: ¿Qué es el valor 10^-4 que aparece, se puede pasar como parámetro?
+# TODO: Que es el valor 10^-4 que aparece, se puede pasar como parametro?
 .getOffsetMatrix <- function( df, dfGen, targets, 
     offsetAggregateMode = c( "geneMode","binMode" )[2], 
     offsetUseFitGeneX = TRUE) {
