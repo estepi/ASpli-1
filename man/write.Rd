@@ -20,5 +20,5 @@ writeAll(counts, du, as, output.dir="output")
 \item{output.dir}{ Name of output folder (new or existing) }
 }
 \value{ Tab delimited files are exported in a tidy manner into output folder }
-\author{ Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz}
+\author{ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz}
 \seealso{ \code{ \link{AsDiscover}, \link{binGenome},\link{DUreport} } }
