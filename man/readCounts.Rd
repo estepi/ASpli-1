@@ -6,7 +6,8 @@ Summarize read overlaps
 \description{
 Summarize read overlaps against all feature levels }
 \usage{
-readCounts(features, bam, targets,cores,  l, maxISize, minAnchor)
+readCounts(features, bam, targets, cores = 1, readLength,
+                 maxISize, minAnchor = NULL)
 }
 \arguments{
 \item{features}{
@@ -18,11 +19,9 @@ List of bam files
 \item{targets}{
 A dataframe containing sample, bam and condition columns 
 }
-
-\item{l}{
+\item{readLength}{
 Read length of sequenced library. It is used for compute E1I and IE2 read summarization
 }
- 
 \item{maxISize}{maximum intron expected size. Junctions longer than this size will be dicarded  }
 \item{cores}{Number of cores to use. Default 1}
 \item{minAnchor}{ Percentage of read thath sould be aligned in exon-intron boundary  }
@@ -32,7 +31,7 @@ Read length of sequenced library. It is used for compute E1I and IE2 read summar
 An object of class ASpliCounts. Each slot is a dataframe containing features metadata  and read counts. Summarization is reported at gene, bin, junction and intron flanking regions (E1I, IE2)
 }
 \author{
-Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz 
+Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz 
 
 
 }
@@ -49,7 +48,7 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, targets, l=100L, maxISize=50000)#OK
+counts <- readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
 writeCounts(counts,output.dir="only_counts")
 }
 
