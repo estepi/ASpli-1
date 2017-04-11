@@ -129,7 +129,7 @@ setGeneric( name = "rds",
   def = function( counts, targets ) standardGeneric("rds") )
 
 # TODO: Las densidades de reads de genes y bins se calculan dos veces. Una 
-# vez acá y otra vez cuando se hace el filtrado para hacer DU.
+# vez aca y otra vez cuando se hace el filtrado para hacer DU.
 setMethod(
   f= "rds",
   signature = "ASpliCounts",
@@ -156,16 +156,15 @@ setMethod(
 # readCounts
 setGeneric (
   name = "readCounts",
-  def = function( features, bam,  targets, cores = 1, readLength, maxISize, 
-      minAnchor = NULL)
+  def = function( features, bam,  targets, cores = 1, readLength, maxISize, minAnchor = NULL)
   standardGeneric("readCounts") )
 
 setMethod(
   f = "readCounts",
   signature = "ASpliFeatures",
-  definition = function( features, bam,  targets, cores = 1, readLength, 
-      maxISize, minAnchor = 10) {
-      
+  definition = function( features, bam,  targets, cores = 1, readLength,  maxISize, minAnchor = 10) 
+    {
+    l=readLength
     counts <- new(Class="ASpliCounts")
     minA <- round( minAnchor * l / 100 )
     
@@ -426,7 +425,7 @@ setMethod(
       esPSI( as ) <- result
       # ---------------------------------------------------------------------- #
       
-      # TODO: joint podría ser un getter, pero no es necesario mantener toda
+      # TODO: joint podria ser un getter, pero no es necesario mantener toda
       # esta data repetida
       joint( as ) <- rbind( altPSI( as ), esPSI( as ), irPIR( as ) )
       
@@ -477,8 +476,8 @@ setMethod(
 )
 ##########################################################################
 
-# TODO: ¿ Es necesario agregar todos los parámetros con valores por default en
-# la firma del método ? 
+# TODO:  Es necesario agregar todos los parametros con valores por default en
+# la firma del metodo ? 
 setGeneric (
     name = "DUreport",
     def = function( counts, 
@@ -632,7 +631,7 @@ setMethod(
     } )
 
     
-# TODO: Qué pasa con las funciones de DEXSeq con las nuevas modificaciones de
+# TODO: Que pasa con las funciones de DEXSeq con las nuevas modificaciones de
 # ASpli
 #setMethod(
 #  f = "DUreport_DEXSeq",
