@@ -10,14 +10,9 @@ Given a bin, it is possible to calculate PSI/PIR metric using junctions to estim
 
  
 \usage{
-AsDiscover(counts, 
-          targets, 
-          features, 
-          bam, 
-          l,
-          pair,
-          threshold, 
-          cores)
+ AsDiscover(counts, targets, features, bam, readLength, threshold
+                , cores )
+
 }
 \arguments{
 \item{counts}{
@@ -32,11 +27,8 @@ An object of class ASpliFeatures.
 \item{bam}{
 A list with BAM files
 }
-\item{l}{
+\item{readLength}{
 Read length of sequenced read. Default 100L
-}
-\item{pair}{
-Vector of length two, either numeric or character, providing the pair of groups to be compared
 }
 
 \item{threshold}{
@@ -81,10 +73,8 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, targets, l=100L, maxISize=50000)
-group <- factor(c(rep("CT",4),rep("KD",4)))
-pair <- c("CT","KD")  
-as <- AsDiscover(counts, targets, features, bam, l=100L, pair=pair)
+counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+  as <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 writeAS(as=as, output.dir="only_as")
 }
 
