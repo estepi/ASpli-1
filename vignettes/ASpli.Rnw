@@ -12,7 +12,7 @@ options(continue=" ")
 \usepackage{cite}
 \usepackage{subcaption} 
 \title{\texttt{ASpli}: An integrative R package for analysing alternative splicing using RNAseq}
-\author{Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz}
+\author{Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz}
 \begin{document}
 
 \SweaveOpts{concordance=TRUE}
@@ -139,12 +139,12 @@ bam <- loadBAM(targets)
 Using the method \texttt{readCounts}, read alignments are overlaid on features. Results are stored into an \texttt{ASpliCounts} object. Read densities (number of reads / feature length) are calculated for genes and bins.
 Count tables and read densities tables are produced at different genomic levels, including genes, bins, junctions, and intron flanking regions. 
 <<loadBam, echo=TRUE, eval=FALSE>>=
-counts <- readCounts(features, bam, l=100L, maxISize=5000)
+counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
 @
 
 Parameters:
 \begin{itemize}
-\item \texttt{l}: Read length of sequenced library 
+\item \texttt{readLength}: Read length of sequenced library 
 \item \texttt{maxISize}: maximum intron expected size. Junctions longer than this size will be dicarded. \cite{Hong01122006}
 \end{itemize}
 
@@ -185,8 +185,7 @@ Using the obtained count tables at bin and junction level it is possible to get 
 
 
 <<AsDiscover, echo=TRUE, eval=FALSE>>=
-pair <- c("CT","KD")
-as <- AsDiscover(counts, targets, features, bam, l=100L, pair=pair)
+as <- AsDiscover(counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 @
 
 
@@ -244,9 +243,8 @@ DUreport function performs statistical tests using a count centric approach. Res
 
 It is necessary to specify group and pair of comparison:
 <<group, eval=FALSE, echo=TRUE>>=
-pair <- c("CT","KD")
-group <- c(rep("CT", 4),rep("KD", 4))
-du <- DUreport(counts, targets, pair, group)
+du <- DUreport( counts, targets, offset = FALSE, ignoreExternal =TRUE, ignoreIo = TRUE)#version corta default
+
 @
 
 \subsubsection{Differential gene expression (DE)}
@@ -268,12 +266,6 @@ average \textit{Gene counts} in all conditions:
 
 	\[ CountBinAdjusted=(\frac{G_A:B_i}{G_A})_1 * \tilde G_A \]
 
-As already mentioned it is also possible to use DEXSeq for differential usage estimation, without any correction:
-<<DEXSeq, echo=TRUE, eval=FALSE>>=
- du_DEXSeq <- DUreport_DEXSeq(counts, targets, pair, group)
-@
-
-In general, we have found a high overlap between both methods. (See example below, in Section 4 "Example data" analysis.)\\
 
 Output tables can be accessed and exported easily:
  
@@ -289,7 +281,6 @@ At each module, results are stored in \texttt{ASpliObjects}. Self-explanatory ta
 
 <<write, echo=TRUE, eval=FALSE>>=
 writeCounts(counts, "example_counts")
-writeRds(counts, "example_rds")
 writeDU(du, output.dir="example_du");
 writeAS(as=as, output.dir="example_as");
 writeAll(counts=counts, du=du, as=as, output.dir="example_all")
@@ -410,18 +401,15 @@ bam <- loadBAM(targets)
 @
 Overlap alignments against features:
 <<todosJuntos, eval=TRUE>>=
-counts <- readCounts(features=features, bam=bam, targets=targets, l=100L, maxISize=50000)
+counts<-readCounts(features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
 @
 Perform DE/DU analysis
 <<DU, eval=TRUE>>=
-pair <- c("CT","KD")
-group <- c(rep("CT", 4),rep("KD", 4))
-du_HNRNPC <- DUreport(counts, targets, pair, group) 
-
+du_HNRNPC <- DUreport( counts, targets, offset = FALSE, ignoreExternal =TRUE, ignoreIo = TRUE)
 @
 Analyze AS using junctions:
 <<AS, eval=TRUE>>=
-as_HNRNPC <- AsDiscover(counts=counts, targets=targets, features=features, bam=bam, l=100L, pair=pair)
+as_HNRNPC <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 @
 
 Select TopTags (only using DU information:)
@@ -466,20 +454,6 @@ Check overlap between default DUreport (using gene expression correction and edg
 binsdu <- binsDU(du_HNRNPC)
 topTagsBins <- which(binsdu$bin.fdr <= 0.1 & 
                      abs(binsdu$logFC) >=0.58)
-@
-Analyze with DEXSeq:
-<<DEXSeq, echo=TRUE, eval=TRUE>>=
-du_DEXSeq <- DUreport_DEXSeq(counts, targets, pair, group)
-binsdx <- binsDU(du_DEXSeq)
-topTagsBinsDx <- which(binsdx$bin.fdr <= 0.1 & 
-                     abs(binsdx$logFC) >=0.58)
-@
-Plot in a Venn Diagram:
-<<venn, echo=TRUE, eval=TRUE>>=
-all <- union(topTagsBins, topTagsBinsDx)
-auxdf <- data.frame(edgeR=all%in%topTagsBins,
-                    DEXSeq=all%in%topTagsBinsDx)
-vennDiagram(auxdf)
 @
 
 <<sessionInfo, eval=TRUE, echo=TRUE>>=
