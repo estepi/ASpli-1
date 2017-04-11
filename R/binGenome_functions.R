@@ -1,16 +1,16 @@
 .createGRangesGenes <- function( genomeTxDb, geneSymbols ) {
   
   # -------------------------------------------------------------------------- #
-  # Se generan los rangos de los bins que corresponden a los bins exónicos.
-  # Pimero se extraen los exones anotados para cada gen y después se entrecruzan
-  # los exones del mismo gen ( con la función disjoin ) dando los rangos de los
+  # Se generan los rangos de los bins que corresponden a los bins exonicos.
+  # Pimero se extraen los exones anotados para cada gen y despues se entrecruzan
+  # los exones del mismo gen ( con la funcion disjoin ) dando los rangos de los
   # bins
   exons                  <- exonsBy( genomeTxDb, by="gen" ) #extract exons by gene
   exons.by.gene.disjoint <- disjoin( exons ) 
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Agrega datos de la coordenadas genómicas, el solapamiento de genes y 
+  # Agrega datos de la coordenadas genomicas, el solapamiento de genes y 
   # simbolos de los genes
   geneCoordinates <- .createGRangesGenes.getGeneCoordinates( 
       exons.by.gene.disjoint , genomeTxDb )
@@ -91,7 +91,7 @@
 .createGRangesExons <- function( aTxDb, geneSymbols ) {
   
   # -------------------------------------------------------------------------- #
-  # Recupera los exones de los genes con más de un exon
+  # Recupera los exones de los genes con mas de un exon
   exonsM <- .createGRangesExons.getExonsFromMultiExonicGenes( aTxDb )
   # -------------------------------------------------------------------------- # 
   
@@ -130,12 +130,12 @@
 .createGRangesExons.getExonBinNames <- function ( aGRanges ) {
   
   # -------------------------------------------------------------------------- #
-  # Recupera el número de exones para cada gen.
+  # Recupera el numero de exones para cada gen.
   nExonsByGene <- table( names( aGRanges ) )          
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Genera un lista que contiene el número de orden de cada exon
+  # Genera un lista que contiene el numero de orden de cada exon
   exon.bins.num <- unlist( lapply( nExonsByGene, seq ) )
   # Genera identificadores de orden para los bins
   exonBinIds  <- sprintf('E%03d', exon.bins.num)
@@ -156,7 +156,7 @@
   
   # Extrae todos los exones
   exons <- exonsBy(aTxDb, by="gen" ) #extract exons by gen 
-  # se queda con los GRanges de los genes que tienen más de un exón
+  # se queda con los GRanges de los genes que tienen mas de un exon
   multipleExons <- exons[ lengths( exons )  > 1 ] 
   
   return ( multipleExons )
@@ -185,7 +185,7 @@
 .createGRangesIntrons <- function( aTxDb, geneSymbols ) {
   
   # -------------------------------------------------------------------------- #
-  # Recupera los intrones de la anotación por transcripto
+  # Recupera los intrones de la anotacion por transcripto
   introns <- intronsByTranscript( aTxDb, use.names=TRUE )
   # -------------------------------------------------------------------------- #
   
@@ -207,7 +207,7 @@
           keytype = 'TXNAME', 
           columns = 'GENEID' )
   )
-  # Elimina posibles datos con nombres de gen no válido.
+  # Elimina posibles datos con nombres de gen no valido.
   introns.map <- introns.map[ ! is.na( introns.map$GENEID ) , ]
   introns.no.dups <-  introns.no.dups[ ! is.na( introns.map$GENEID ) , ]
   # -------------------------------------------------------------------------- #
@@ -218,7 +218,7 @@
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Recupera todos los rangos del GrangesList en un único GRanges.
+  # Recupera todos los rangos del GrangesList en un unico GRanges.
   nIntronsByGene      <- lengths( introns.by.gene )
   intronOrig          <- unlist( introns.by.gene )
   geneNames           <- rep( names( introns.by.gene ), nIntronsByGene )
@@ -247,11 +247,11 @@
   # Procesa los bins intronicos.
   # Obtiene los rangos de los bins.
   introns.by.gene.disjoint <- disjoin( introns.by.gene )
-  # Recupera el número de intrones por gen
+  # Recupera el numero de intrones por gen
   nIntronsByGene           <- lengths( introns.by.gene.disjoint )
   # Recupera los nombres del gen para cada intron
   geneNames                <- rep (names(introns.by.gene.disjoint),nIntronsByGene )
-  # Junta todos los rangos de GRangeList de los intrones en un únido GRanges.
+  # Junta todos los rangos de GRangeList de los intrones en un unido GRanges.
   intron.bins              <- unlist( introns.by.gene.disjoint )
   # -------------------------------------------------------------------------- #
   
@@ -279,16 +279,16 @@
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Junta los intrones originales y los bins intrónicos.
-  # Si hay un intrón originales que es igual a uno intrónico, se elimina.
-  # La eliminación se hace implicitamente con la función unique. Se eliminan
-  # los originales porque están después que los bins intrónicos.
+  # Junta los intrones originales y los bins intronicos.
+  # Si hay un intron originales que es igual a uno intronico, se elimina.
+  # La eliminacion se hace implicitamente con la funcion unique. Se eliminan
+  # los originales porque estan despues que los bins intronicos.
   intrones.totales  <- c( intron.bins, intronOrig )
   intron.tot.u      <- sort( unique( intrones.totales ) )
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Agrega los símbolos de los genes
+  # Agrega los simbolos de los genes
   symbolIndex <- match( mcols(intron.tot.u)[, 'locus'], rownames( geneSymbols ) )
   symbol <- geneSymbols[symbolIndex, ]
   mcols(intron.tot.u) <- append( mcols( intron.tot.u ), DataFrame( symbol = symbol ) )
@@ -314,7 +314,7 @@
   # -------------------------------------------------------------------------- #
   # Recupera los intrones por transcripto
   introns.no.dups <- .createGRangesJunctions.getUniqueIntrons( aTxDb )
-  # Recupera los nombres de los transcriptos para cada intrón
+  # Recupera los nombres de los transcriptos para cada intron
   introns.tx.names <- names( introns.no.dups )
   # -------------------------------------------------------------------------- #
   
