@@ -9,8 +9,8 @@ biocViews: GeneExpression, Transcription, AlternativeSplicing,
         Coverage, DifferentialExpression, DifferentialSplicing,
         TimeCourse, RNASeq, GenomeAnnotation, Sequencing, Alignment
 Depends: methods,GenomicRanges,GenomicFeatures,edgeR,BiocGenerics,
-        IRanges, GenomicAlignments, DESeq2, DEXSeq, Gviz, grDevices,
-        stats, utils, S4Vectors, AnnotationDbi, parallel
+        IRanges, GenomicAlignments, Gviz, grDevices,
+        stats, utils, S4Vectors, AnnotationDbi, parallel, graphics
 Suggests: RNAseqData.HNRNPC.bam.chr14, BiocStyle
 Maintainer: Estefania Mancini <emancini@leloir.org.ar>
 Description: Integrative pipeline for the analyisis of alternative
