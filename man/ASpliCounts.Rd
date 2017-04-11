@@ -14,4 +14,4 @@
     \item{\code{bin.rd}}{}
   }
 }
-\author{ Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz}
+\author{ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz}
