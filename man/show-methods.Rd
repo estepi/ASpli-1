@@ -8,4 +8,4 @@
 \title{ Display a summary of data contained in ASpliObjects }
 \description{ Display a summary of data contained in ASpliObjects}
 \details{ Display a summary of data contained in ASpliObjects }
-\author{ Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz  }
+\author{ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz  }
