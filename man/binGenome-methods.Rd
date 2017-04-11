@@ -12,7 +12,7 @@ Feature coordinates extraction from a Transcript Db Database
 An object of class transcriptDb (TxDb) 
 }
 }}
-\author{Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz }
+\author{Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz }
 \seealso{ \code{\link{featuresg}, \link{featuresb} , \link{featuresj} 
 } 
 }
