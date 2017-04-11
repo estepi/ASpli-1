@@ -38,7 +38,7 @@ library(RNAseqData.HNRNPC.bam.chr14)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, targets, l=100L, maxISize=50000);
+counts<-readCounts (features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
 countsb(counts)
 countse1i(counts)
 countsg(counts)
