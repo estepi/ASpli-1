@@ -7,7 +7,16 @@ Differential gene expression and differential bin/junction usage estimation
 Estimate differential expression at gene level and differential usage at bin and junction level.
 }
 \usage{
-DUreport(counts, targets, pair, group, minGenReads, minBinReads, minRds,ignoreExternal,threshold)
+DUreport(counts, targets, minGenReads, minBinReads,
+                 minRds, offset = FALSE, offsetAggregateMode,
+                 offsetUseFitGeneX = TRUE,
+                 contrast = NULL, 
+                 forceGLM = FALSE, 
+                 ignoreExternal =TRUE, 
+                 ignoreIo = TRUE, 
+                 ignoreI = FALSE)
+
+
 }
 
 \arguments{
@@ -17,21 +26,24 @@ An object of class ASpliCounts
 \item{targets}{
 A dataframe containing sample, bam and condition columns 
 }
-\item{pair}{
-vector of length two, either numeric or character, providing the pair of groups to be compared
-}
-\item{group}{Factorial vector with tags for each sample}
 \item{minGenReads}{Default 10 reads}
 \item{minBinReads}{Default 5 reads}
 \item{minRds}{Default 0.05}
 \item{ignoreExternal}{Ignore Exon Bins at the beggining or end of the transcript. Default TRUE}
-\item{threshold}{Minimun number of junction. Default 5}
+\item{ignoreIo}{Ignore original introns. Default TRUE}
+\item{ignoreI}{Ignore intron bins . Default FALSE}
+\item{offset}{Default = FALSE}
+\item{offsetAggregateMode}{Options:=c( “geneMode”, “binMode” )[ 2 ]},
+\item{offsetUseFitGeneX}{Default= TRUE} 
+\item{contrast}{ Default = NULL}
+\item{forceGLM}{ Default = FALSE}
+
 }
 
 
 \value{ An ASpliDU object with results at \code{genes}, \code{bins} and \code{junctions} level }
 \author{
-Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz
+Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
 }
 \examples{
 library(RNAseqData.HNRNPC.bam.chr14)
@@ -41,11 +53,8 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam, targets, l=100L,  maxISize=50000)
-group <- factor(c(rep("CT",4), 
-                rep("KD",4)))
-pair <- c("CT","KD")  
-du <- DUreport(counts, targets, pair, group)
+counts <- readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+du <- DUreport(counts, targets, offset = FALSE, ignoreExternal=TRUE, ignoreIo = TRUE)
 writeDU(du, output.dir="only_du")
 }
 \seealso{
