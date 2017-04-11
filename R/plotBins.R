@@ -132,7 +132,7 @@
           width=0.9,
           space = c(0.111111, 0.5),
           border = '#DDDDDDFF',
-          beside = T,
+          beside = TRUE,
           las = 2 )
       legend( 
           x = "topleft", 
