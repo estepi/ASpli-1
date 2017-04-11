@@ -10,7 +10,7 @@
   geneStarts          <- sapply( start( feature ), min )
   geneEnds            <- sapply( end( feature ), max)
   geneWidths          <- geneEnds - geneStarts + 1
-  strand              <- as.character( runValue( strand( feature ) ) )
+  strand              <- as.character( unlist(runValue( strand( feature ) ) ))
   
   result <- data.frame(
       symbol = feature@elementMetadata$symbol , 
@@ -48,8 +48,8 @@
 
 # ---------------------------------------------------------------------------- #
 # .counterJbin Cuenta reads que atraviesan dos bins. 
-# TODO: el argumento l es la longitud de una read. ¿ Que pasa con datos que 
-#       tienen un tamaño de read variable ?
+# TODO: el argumento l es la longitud de una read.  Que pasa con datos que 
+#       tienen un tamano de read variable ?
 .counterJbin <- function(reads, feature, genes, cores=NULL, l) {
   
   ungapped <- lapply( reads, function(x) { x[ njunc( x ) == 0 , ] } )
