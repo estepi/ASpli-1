@@ -21,7 +21,7 @@ Depends: \tab methods, GenomicRanges, GenomicFeatures, edgeR, methods, BiocGener
 }
 }
 \author{
-Estefania Mancini, Marcelo Yanovsky and Ariel Chernomoretz
+Estefania Mancini, Javier Iserte, Marcelo Yanovsky and Ariel Chernomoretz
 }
 \references{
 \itemize{
@@ -33,6 +33,7 @@ Estefania Mancini, Marcelo Yanovsky and Ariel Chernomoretz
 
 \item A role for LSM genes in the regulation of circadian rhythms. Proceedings of the National Academy of Sciences. Perez Santangelo, S, Mancini, E, Francey, LJ, Schlaen, RG, Chernomoretz, A, Hogenesch, JB, Yanovsky MJ. DOI: 10.1073/pnas.1409791111 
 
+\item The dengue virus NS5 protein intrudes in the cellular spliceosome and modulates splicing. PLOS Pathogens. De Maio, F., Risso, G., Iglesias, G., Shah, P, Pozzi, B., Gebhard, L., Mammi, L., Mancini, E., Yanovsky, M., Andino, R., Krogan, N., Srebrow, A. and Gamarnik, A. DOI:10.1371/journal.ppat.1005841
 }
 }
 \examples{ 
@@ -43,10 +44,8 @@ features <- binGenome(genome)
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
 bam <- loadBAM(targets)
-counts <- readCounts(features, bam,  targets, l=100L,  maxISize=50000);
-group <- factor(c(rep("CT",4),rep("KD",4)))
-pair <- c("CT","KD")  
-du <- DUreport(counts, targets, pair, group)
-as <- AsDiscover(counts, targets, features, bam, threshold=5, l=100, pair=pair)
+counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+du <- DUreport(counts, targets, offset = FALSE, ignoreExternal=TRUE, ignoreIo = TRUE)
+as <- AsDiscover(counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 }
 \keyword{ alternative splicing, RNA-seq, junctions }
