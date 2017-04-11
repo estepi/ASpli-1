@@ -20,4 +20,4 @@ Target dataframe
 \value{
 Read densities of genes and bins
 }
-\author{ Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz  }
+\author{ Estefania Mancini, Javier Iserte,  Marcelo Yanovsky, Ariel Chernomoretz  }
