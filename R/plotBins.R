@@ -90,13 +90,13 @@
     if ( ! justOneFactor ) {
       
       xTicksLabels <- rep( apply( gridPanels, 1, 
-              function( x ) paste0(x,collapse=  "·") ), sapply( data, length  ) )
+              function( x ) paste0(x,collapse=  ".") ), sapply( data, length  ) )
       
-      xTicksLabels <- apply( gridPanels, 1, function( x ) paste0(x,collapse=  "·") )
+      xTicksLabels <- apply( gridPanels, 1, function( x ) paste0(x,collapse=  ".") )
       
       xTicksLabels <- expand.grid( factorsAndValues[[ mainFactorIndex]], xTicksLabels )
       
-      xTicksLabels <- paste0( xTicksLabels[,2] ,"·",  xTicksLabels[,1] )
+      xTicksLabels <- paste0( xTicksLabels[,2] ,".",  xTicksLabels[,1] )
     } else {
       xTicksLabels <- factorsAndValues[[mainFactorIndex]]
     }
