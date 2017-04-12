@@ -27,17 +27,17 @@ In this vignette, we describe how to use ASpli, an integrative and user-friendly
 BAM files of each sample and gene annotation are mandatory. Make sure all files use the same coordinate system. It is a good practice to organize all required files (or symbolic links of them) together into the  working directory.
 
 \subsection{Installation}
-ASpli is available at bioconductor.org and can be downloaded using
+ASpli is available at Bioconductor site and can be downloaded using
 \texttt{biocLite()}:
 <<installation, echo=TRUE, eval=FALSE>>=
-source("https://bioconductor.org/biocLite.R")
+source("https://www.bioconductor.org/biocLite.R")
 biocLite("ASpli")
 @
 <<loadASpli, echo=TRUE, eval=TRUE>>=
 library(ASpli)
 @
  
-\texttt{biocLite()} will take care of installing all the packages that ASpli depends on e.g. edgeR, DEXSeq, GenomicFeatures, GenomicRanges, GenomicAlignments, Gviz, and more...
+\texttt{biocLite()} will take care of installing all the packages that ASpli depends on e.g. edgeR, GenomicFeatures, GenomicRanges, GenomicAlignments, Gviz, and more...
 
 \subsection{Building a \texttt{TxDb} of your genome }
 Gene annotation is handled using \texttt{TxDb} objects. The building of a \texttt{TxDb} object might be time consuming, depending on the size of your genome. If a \texttt{TxDb} has been already created, we strongly recommend  saving it as a \texttt{sqlite} file and reloading it any time the analysis is run.  The \texttt{GenomicFeatures} package provides functions to create TxDb objects based on data downloaded from UCSC Genome Bioinformatics, BioMart or gff/gtf files. See "Creating New TxDb Objects or Packages" in the \texttt{GenomicFeatures} vignette for more details. In this example, a TxDb is built from a gtf file:
@@ -139,13 +139,13 @@ bam <- loadBAM(targets)
 Using the method \texttt{readCounts}, read alignments are overlaid on features. Results are stored into an \texttt{ASpliCounts} object. Read densities (number of reads / feature length) are calculated for genes and bins.
 Count tables and read densities tables are produced at different genomic levels, including genes, bins, junctions, and intron flanking regions. 
 <<loadBam, echo=TRUE, eval=FALSE>>=
-counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+counts<-readCounts (features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
 @
 
 Parameters:
 \begin{itemize}
 \item \texttt{readLength}: Read length of sequenced library 
-\item \texttt{maxISize}: maximum intron expected size. Junctions longer than this size will be dicarded. \cite{Hong01122006}
+\item \texttt{maxISize}: maximum intron expected size. Junctions longer than this size will be dicarded\cite{Hong01122006}.
 \end{itemize}
 
 Count and read density tables could be extracted using accesors. Also, it is possible to export count and read densities tables in a tidy manner.
@@ -166,26 +166,26 @@ writeRds(counts=counts, output.dir = "example")
 
 \textbf{Some key features:}
 \begin{itemize}
-\item \textbf{E1I and IE2 counts}: Every intron is considered as a potential retained intron. Analysis of putative IR events consider  adjacent 5' and 3' exons (E1 and E2, respectively) and the intron itself (I). Following \cite{pmid25258385}, two retention regions E1I (connecting exon E1 and I) and IE2 (connecting the intron and exon 2) and one constitutive (i.e., no retention) junction, E1E2 (connecting exons 1 and 2) are defined. The read length of sequenced library (\texttt{l}) is used for the definition of those new artifitial ranges:
+\item \textbf{E1I and IE2 counts}: Every intron is considered as a potential retained intron. Analysis of putative IR events consider  adjacent 5' and 3' exons (E1 and E2, respectively) and the intron itself (I). Following \cite{pmid25258385}, two retention regions E1I (connecting exon E1 and I) and IE2 (connecting the intron and exon 2) and one constitutive (i.e., no retention) junction, E1E2 (connecting exons 1 and 2) are defined. The read length of sequenced library is used for the definition of those new artifitial ranges:
 \begin{itemize}
-  \item E1I: intron start-(l-minAnchor)- intron start + (l-minAnchor)
-  \item IE2: intron end-(l-minAnchor)- intron end + (l-minAnchor)
+  \item E1I: intron start - (readLength - minAnchor) - intron start + (readLength - minAnchor)
+  \item IE2: intron end - (readLength - minAnchor) - intron end + (readLength - minAnchor)
   \item \texttt{minAnchor} is 10\% of read length by default (parameter \texttt{minAnchor})
 \end{itemize}
-Only those reads which minimum overlap \textit{l} and without gap in this interval are considered. Accordingly, only sequences aligned within those two exons/introns are counted. 
+Only those reads which minimum overlap \textit{readLength} and without gap in this interval are considered. Accordingly, only sequences aligned within those two exons/introns are counted. 
 \item Number of reads by gene are computed summarizing the reads of the constitutive exon bins of each gene. 
 \item In order to estimate read densities, an effective length (sum of the length of exonic bins (constitutive and alternative of their corresponding gene) is considered
 \item The minimum overlap lenght between read and feature is 1. Hence, some reads might overlap to more than one bin  and could be counted several times.
-\item Junctions: They are extracted from BAM files. They are defined as those reads aligned skipping region from the reference (N operation in the CIGAR). They are essential for alternative splicing event quantification and discovery. 
-\end{itemize}
+\item Junctions: They are extracted from BAM files. They are defined as those reads aligned skipping region from the reference (N operation in the CIGAR). They are essential for alternative splicing event quantification and discovery. Junction alignment quality/confidence is extremely importat and it should be controlled at the moment of the alignment step.
+\end{itemize} 
 
 \subsection{Alternative splicing analysis and discovery using junction}
-Using the obtained count tables at bin and junction level it is possible to get an integrative view of the AS events under analysis. The function \texttt{AsDiscover} will produce an \texttt{ASpliAS} object containing several comprehensive tables, which could be accesed through their corresponding accesors. It is necessary to specify pair of comparison:
+Using the obtained count tables at bin and junction level it is possible to get an integrative view of the AS events under analysis. The function \texttt{AsDiscover} will produce an \texttt{ASpliAS} object containing several comprehensive tables, which could be accesed through their corresponding accesors. 
 
 
 
 <<AsDiscover, echo=TRUE, eval=FALSE>>=
-as <- AsDiscover(counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
+as <- AsDiscover(counts, targets, features, bam, readLength=100L, threshold = 5)
 @
 
 
@@ -241,10 +241,8 @@ Using the generated counting tables it is possible to estimate the differential 
 
 DUreport function performs statistical tests using a count centric approach. Results are stored into an \texttt{ASpliDU} object. Individual tables can be accesed using accesors and exported using \texttt{writeDU} function.
 
-It is necessary to specify group and pair of comparison:
 <<group, eval=FALSE, echo=TRUE>>=
-du <- DUreport( counts, targets, offset = FALSE, ignoreExternal =TRUE, ignoreIo = TRUE)#version corta default
-
+du <- DUreport(counts, targets)
 @
 
 \subsubsection{Differential gene expression (DE)}
@@ -393,7 +391,6 @@ Create targets object using the information of the available files:
 <<targetsEx, echo=TRUE, eval=TRUE>>=
 targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
                        condition=c(rep("CT",4),rep("KD",4)))
-
 @
 Load bam files:
 <<loadBam, echo=TRUE, eval=TRUE>>=
@@ -401,11 +398,11 @@ bam <- loadBAM(targets)
 @
 Overlap alignments against features:
 <<todosJuntos, eval=TRUE>>=
-counts<-readCounts(features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
+counts<-readCounts(features, bam, targets, readLength=100L, maxISize=50000)
 @
 Perform DE/DU analysis
 <<DU, eval=TRUE>>=
-du_HNRNPC <- DUreport( counts, targets, offset = FALSE, ignoreExternal =TRUE, ignoreIo = TRUE)
+du_HNRNPC <- DUreport(counts, targets)
 @
 Analyze AS using junctions:
 <<AS, eval=TRUE>>=
@@ -419,7 +416,7 @@ topTagsBins <- which(binsdu$bin.fdr <= 0.1 &
                  abs(binsdu$logFC) >=0.58)
 @
 
-We can inspect visually the results of topTags. Sometimes is useful to merge BAM files by conditions. \textit{(In this example data, control and knock down replicates were  merged using \texttt{samtools merge} into \textbf{CT.bam} and \textbf{KD.bam} respectively)}. Before plotting it is mandatory to install and load \texttt{Gviz} package.
+We can inspect visually the results of topTags. Sometimes is useful to merge BAM files by conditions. \textit{(In this example data, control and knock down replicates were  merged using \texttt{samtools merge} into \textbf{CT.bam} and \textbf{KD.bam} respectively)}.
 
 <<targetsPlot, eval=TRUE>>=
 targetsPlot <- data.frame(bam=targets$bam, 
@@ -442,13 +439,6 @@ plotTopTags(auxdf["LRR1:E005",],
 \caption{Plot of LRR1:E005 Exon Skipping}
 \end{figure}
 
-
-Check overlap between default DUreport (using gene expression correction and edgeR) and DUreport using DEXSeq:
-\begin{figure}[ht!]
-\centering
-\includegraphics[width=0.5\textwidth]{venn.png}
-\caption{Top Tags bins comparison, bin.fdr less than 0.1, absolute logFC greater than 0.58}
-\end{figure}
 
 <<check, echo=TRUE, eval=TRUE>>=
 binsdu <- binsDU(du_HNRNPC)
