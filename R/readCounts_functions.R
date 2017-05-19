@@ -151,15 +151,17 @@
   span <- tt$subjectHits[te]
   #####################################################################
   overJunctionWithinBins <- findOverlaps(jranges, exonsBins, type="within")
-  overJunctionWithinBinsDF <- as.data.frame(overJunctionWithinBins)
-  namesJ <- as.numeric(overJunctionWithinBinsDF[,1])
-  namesB <- as.numeric(overJunctionWithinBinsDF[,2])
-  overJunctionWithinBinsDF[,1] <- names(jranges[namesJ])
-  overJunctionWithinBinsDF[,2] <- names(exonsBins[namesB])
-  agtt <- data.frame(aggregate(subjectHits ~ queryHits,
-          data = overJunctionWithinBinsDF, paste, collapse=";")) 
-  tw <- match(names(jranges), agtt$queryHits) #ok;
-  j_within_bin <- agtt$subjectHits[tw]
+  if (length (overJunctionWithinBins ) > 0) {
+    overJunctionWithinBinsDF <- as.data.frame(overJunctionWithinBins)
+    namesJ <- as.numeric(overJunctionWithinBinsDF[,1])
+    namesB <- as.numeric(overJunctionWithinBinsDF[,2])
+    overJunctionWithinBinsDF[,1] <- names(jranges[namesJ])
+    overJunctionWithinBinsDF[,2] <- names(exonsBins[namesB])
+    agtt <- data.frame(aggregate(subjectHits ~ queryHits,
+            data = overJunctionWithinBinsDF, paste, collapse=";")) 
+    tw <- match(names(jranges), agtt$queryHits) #ok;
+    j_within_bin <- agtt$subjectHits[tw]
+  }
   symbol <- rep("-", length(jranges))    
   symbol[posJrange] <- as.character(genes@elementMetadata$symbol[posGene])
   mcols(jranges) <- append(mcols(jranges), DataFrame(hitBin=hitBin, 

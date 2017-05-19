@@ -1,48 +1,57 @@
-\name{AS accesors}
+\name{AS accessors}
+
 \alias{altPSI}
 \alias{esPSI}
 \alias{irPIR}
 \alias{joint}
 \alias{junctionsPIR}
 \alias{junctionsPSI}
-\title{
-Accessors for ASpliAS object
-}
-\description{
-Accessors for ASpliAS object
-}
+
+\title{ Accessors for ASpliAS object }
+
+\description{ Methods to retrieve and set data in ASpliAS object. Setting data 
+into an ASpliAS object is not a typical task and must be done with care, because
+it can affect the integrity of the object. }
+
 \usage{
-altPSI(x)
-esPSI(x)
-irPIR(x)
-joint(x)
-junctionsPIR(x)
-junctionsPSI(x)
+altPSI( x )
+esPSI( x )
+irPIR( x )
+joint( x )
+junctionsPIR( x )
+junctionsPSI( x )
 }
+
 \arguments{
-  \item{x}{   
-  An ASpliAS object 
-  }
+  \item{ x }{ An ASpliAS object }
 }
-\value{
-Returns dataframes with genomic metadata and  PSI and PIR metrics
-}
+\value{ Returns dataframes with genomic metadata and  PSI and PIR metrics }
+
 \author{ Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz  }
+
 \examples{
-chr14 <- system.file("extdata","chr14.sqlite", package="ASpli")
-genome <- loadDb(chr14)
-features <- binGenome(genome)
-library(RNAseqData.HNRNPC.bam.chr14)
-targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
-                       condition=c(rep("CT",4),rep("KD",4)))
-bam <- loadBAM(targets)
-counts<-readCounts ( features, bam, targets, cores = 1, readLength=100L, maxISize=50000)
-as <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
-altPSI(as)
-esPSI(as)
-irPIR(as)
-joint(as)
-junctionsPIR(as)
-junctionsPSI(as)
+
+# Accessing data tables from an ASpliAS object
+
+as <- aspliASexample()
+
+ap <- altPSI(as)
+ep <- esPSI(as)
+ip <- irPIR(as)
+j  <- joint(as)
+jpi <- junctionsPIR(as)
+jps <- junctionsPSI(as)
+
+# Setting data tables to an ASpliAS object
+
+as2 <- new( 'ASpliAS' )
+
+altPSI( as2 )  <- ap
+esPSI( as2 )  <- ep
+irPIR( as2 )  <- ip
+joint( as2 )  <- j
+junctionsPIR( as2 )  <- jpi
+junctionsPSI( as2 )  <- jps
+
 }
 

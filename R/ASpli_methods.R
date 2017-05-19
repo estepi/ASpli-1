@@ -164,9 +164,8 @@ setMethod(
   signature = "ASpliFeatures",
   definition = function( features, bam,  targets, cores = 1, readLength,  maxISize, minAnchor = 10) 
     {
-    l=readLength
     counts <- new(Class="ASpliCounts")
-    minA <- round( minAnchor * l / 100 )
+    minA <- round( minAnchor * readLength / 100 )
     
     # Count Genes
     gene.hits <- .counterGenes( bam, featuresg( features ), cores )
@@ -185,16 +184,16 @@ setMethod(
 
     # Count exon1 - intron regions
     e1i <- introns
-    start( e1i ) <- start( introns ) - ( l - minA )
-    end( e1i )   <- start( introns ) + ( l - minA )
-    e1i.hits     <- .counterJbin(bam, e1i, gene.hits, cores, l)
+    start( e1i ) <- start( introns ) - ( readLength - minA )
+    end( e1i )   <- start( introns ) + ( readLength - minA )
+    e1i.hits     <- .counterJbin(bam, e1i, gene.hits, cores, readLength)
     message("Read summarization by ei1 region completed")
     
     # Count intron - exon2 regions
     ie2 <- introns
-    start( ie2 ) <- end( introns ) - ( l - minA )
-    end( ie2 )   <- end( introns ) + ( l - minA )
-    ie2.hits     <- .counterJbin( bam, ie2, gene.hits, cores, l )
+    start( ie2 ) <- end( introns ) - ( readLength - minA )
+    end( ie2 )   <- end( introns ) + ( readLength - minA )
+    ie2.hits     <- .counterJbin( bam, ie2, gene.hits, cores, readLength )
     message("Read summarization by ie2 region completed")
     
     # Count junctions
@@ -517,23 +516,23 @@ setMethod(
       ignoreI = FALSE  
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
-          offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM = FALSE,
-        ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE)
+          offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
+        ignoreExternal, ignoreIo, ignoreI )
   }
 )
 
 setGeneric( name = 'DUreportBinSplice',
-    def = function( counts, targets, minGenReads  = 10,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE ) 
+    def = function( counts, targets, minGenReads  = 10, minBinReads = 5, 
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreIo = TRUE ) 
       standardGeneric( 'DUreportBinSplice'))
 
 setMethod( 
     f = 'DUreportBinSplice',
     signature = 'ASpliCounts',
-    definition = function(counts, targets, minGenReads  = 10,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE  ) {
-      .DUreportBinSplice( counts, targets, minGenReads, minRds, contrast, 
-          forceGLM ) 
+    definition = function( counts, targets, minGenReads  = 10, minBinReads = 5,
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreIo = TRUE ) {
+      .DUreportBinSplice( counts, targets, minGenReads, minBinReads, minRds, 
+          contrast, forceGLM, ignoreIo ) 
     })
 
 setGeneric( name = "junctionDUReport",
@@ -782,3 +781,62 @@ setMethod(
 )
 # ---------------------------------------------------------------------------- #
 
+# ---------------------------------------------------------------------------- #
+# plotBins
+setGeneric( name = "plotBins",
+    def = function(
+        counts, 
+        as,
+        bin, 
+        factorsAndValues, 
+        targets,
+        main            = NULL,
+        colors          = c( '#2F7955', '#79552F', '#465579', '#A04935', '#752020', 
+            '#A07C35') ,
+        panelTitleColors = '#000000',
+        panelTitleCex   = 1,
+        innerMargins    = c( 2.1, 3.1, 1.1, 1.1 ),
+        outerMargins    = c( 0, 0, 2.4, 0 ), 
+        useBarplots     = NULL,
+        barWidth        = 0.9,
+        barSpacer       = 0.4,
+        las.x           = 2,
+        useHCColors     = FALSE,
+        legendAtSide    = TRUE,
+        outfolder       = NULL,
+        outfileType     = 'png',
+        deviceOpt       = NULL ) standardGeneric( 'plotBins' ) )
+
+setMethod( 
+    f = "plotBins",
+    signature = 'ASpliCounts',
+    definition = function( 
+        counts, 
+        as,
+        bin, 
+        factorsAndValues, 
+        targets,
+        main            = NULL,
+        colors          = c( '#2F7955', '#79552F', '#465579', '#A04935', 
+            '#752020', '#A07C35') ,
+        panelTitleColors = '#000000',
+        panelTitleCex   = 1,
+        innerMargins    = c( 2.1, 3.1, 1.1, 1.1 ),
+        outerMargins    = c( 0, 0, 2.4, 0 ), 
+        useBarplots     = NULL,
+        barWidth        = 0.9,
+        barSpacer       = 0.4,
+        las.x           = 2,
+        useHCColors     = FALSE,
+        legendAtSide    = TRUE,
+        outfolder       = NULL,
+        outfileType     = 'png',
+        deviceOpt       = NULL ) {
+      
+      .plotBins( counts, as, bin, factorsAndValues, targets, main, colors, 
+          panelTitleColors, panelTitleCex, innerMargins, outerMargins, 
+          useBarplots, barWidth, barSpacer, las.x, useHCColors, legendAtSide,
+          outfolder, outfileType, deviceOpt )
+    } 
+)
+# ---------------------------------------------------------------------------- # 

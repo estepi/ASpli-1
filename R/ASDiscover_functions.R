@@ -1,22 +1,4 @@
-# This function sums counts of a data frame by condition.
-# The conditions are given in the targets data.frame.
-# the dataframe to be summed must have the same number of columns as samples 
-# in the targets, and they must have the same order.
-.sumByCond <- function( countDf, targets ) {
-  countDf[ is.na( countDf )] <- 0
-  uniqueConditions <- unique( targets$condition )
-  nConditions <- length( uniqueConditions )
-  result <- matrix( 
-      data = 0, 
-      nrow = nrow( countDf) , 
-      ncol = nConditions )
-  
-  for( i in 1:nConditions ) {
-    result[ , i ] <- rowSums( countDf[ , targets$condition == uniqueConditions[i] ] )
-  }
-  colnames( result ) <- uniqueConditions
-  return ( result )
-}
+
 
 # Filter junctions that has in at least one condition a given (threshold) number
 # of junction for all samples.

@@ -1,25 +1,3 @@
-.extractCountColumns <- function ( aDataframe, targets ) {
-  result <- aDataframe[ , match( row.names(targets), colnames( aDataframe ) ) ]
-  colnames( result ) <- as.character( row.names(targets) )
-  return( result )
-}
-
-.extractDataColumns <- function ( aDataframe, targets ) {
-  result <- aDataframe[ , - match( row.names(targets) , colnames( aDataframe ) ) ]
-  return( result )
-}
-
-.condenseTargetsConditions <- function ( targets ) {
-  if( ! "condition" %in% colnames( targets ) ) {
-    
-    targets <- data.frame( 
-        targets, 
-        condition = apply( targets[ , -1 , drop = FALSE] ,1 ,paste,collapse="_"))
-    
-  }
-  return( targets )
-}
-
 .DUreport <- function( 
     counts, 
     targets, 
@@ -46,17 +24,12 @@
   # Generate conditions combining experimental factors
   targets <- .condenseTargetsConditions( targets ) 
   
-  # ------------------------------------------------------------------------ #
   # Filter genes and calculates differential usage of genes
   du <- .DUreportGenes( du, counts, targets, minGenReads, minRds, contrast, 
       forceGLM )
   message("Genes DE completed")
-  # ------------------------------------------------------------------------ #
-  
-  # ------------------------------------------------------------------------ #
+
   # Filter bins and calculates differential usage of bins 
-  
-    
   du <- .DUReportBins( du, 
                        counts, 
                        targets, 
@@ -74,16 +47,20 @@
   message("Bins DE completed")
   # ------------------------------------------------------------------------ #
   
-  return(du)
+  return( du )
 }
 
 .DUreportBinSplice <- function (  
     counts, 
     targets, 
     minGenReads  = 10,
+    minBinReads  = 5,
     minRds = 0.05,
     contrast = NULL,
-    forceGLM = FALSE ) {
+    forceGLM = FALSE,
+    ignoreExternal = TRUE, 
+    ignoreIo = TRUE, 
+    ignoreI = FALSE ) {
  
   # Create result object                   
   du <- new( Class="ASpliDU" )
@@ -91,18 +68,17 @@
   # Generate conditions combining experimental factors
   targets <- .condenseTargetsConditions( targets ) 
   
-  # ------------------------------------------------------------------------ #
   # Filter genes and calculates differential usage of genes
   du <- .DUreportGenes( du, counts, targets, minGenReads, minRds, contrast, 
       forceGLM )
   message("Genes DE completed")
-  # ------------------------------------------------------------------------ #
-  
-  # ------------------------------------------------------------------------ #
+
   # Filter bins and calculates differential usage of bins 
-  du <- .DUReportBinsSpliceDGE(counts, targets, contrast )
+  du <- .DUReportBinsWithDiffSplice( counts, targets, contrast, du, minGenReads, 
+      minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI )
   message("Bins DE completed")
-  # ------------------------------------------------------------------------ #
+  
+  return( du )
   
 }
 
@@ -115,17 +91,12 @@
     contrast = NULL,
     forceGLM = FALSE ) {
   
-  # Filter genes and calculates differential usage of genes
-  dfG0 <- .filterByReads( df0 = countsg( counts ), targets = targets,
-      min = minGenReads, type = "any" )
-  
-  dfGen <- .filterByRdGen( df0 = dfG0, targets = targets,
-      min = minRds, type = "any" ) 
+  dfGen <- .filterGenes( counts, targets, minGenReads, minRds )
   
   genesde <- .genesDE( df=dfGen, targets = targets,
       contrast = contrast, forceGLM = forceGLM )
   
-  du@genes <- genesde
+  genesDE( du ) <- genesde
   
   return( du )
   
@@ -148,26 +119,15 @@
     ignoreI ) {
   
   # Filter bins
-  dfG0 <- .filterByReads( df0 = countsg( counts ), targets = targets,
-      min = minGenReads, type = "all" )
+  filteringResult <- .filterBins(counts, targets, minGenReads, minBinReads, 
+      minRds, ignoreIo )
+  dfGen <- filteringResult$genes
+  df2   <- filteringResult$bins
   
-  dfGen <- .filterByRdGen( df0 = dfG0, targets = targets, 
-      min = minRds, type = "all" )
-  
-  dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
-  
-  if( ignoreIo ) dfBin <- dfBin[dfBin[,"feature"]!="Io",]
-  
-  df1 <- .filterByReads( df0=dfBin, targets=targets, 
-      min=minBinReads, type="any" )
-  
-  df2 <- .filterByRdBinRATIO( dfBin=df1, dfGen=dfGen,
-      targets=targets, min=minRds, type="any" )
-  
-  # Set offset matrix is required
+  # Set offset matrix if required
   if( offset ) {
     mOffset <- .getOffsetMatrix(
-        dfBin,
+        df2,
         dfGen,
         targets,
         offsetAggregateMode = offsetAggregateMode,
@@ -191,49 +151,65 @@
       # -------------------------------------------------------------------- # 
       # Comment to disable priorcounts usage 
       , priorCounts = 0 
-#    , priorCounts = priorCounts 
-  # -------------------------------------------------------------------- # 
+      # , priorCounts = priorCounts 
+      # -------------------------------------------------------------------- # 
   ) 
   
-  du@bins <- binsdu
+  binsDU( du ) <- binsdu
  
   return( du )
 }
 
-.DUReportBinsSpliceDGE <- function( counts, targets, contrast ) {
+.DUReportBinsWithDiffSplice <- function( counts, targets, contrast, du, 
+    minGenReads, minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI ) {
   
-  countData <- countsb( counts )
-  countData <- countData[ countData[,'feature'] != "Io", ]
+  # Filter bins
+  countData <- .filterBins( counts, targets, minGenReads, minBinReads, minRds, 
+      ignoreIo )
+
+  binsdu <- .binsDUWithDiffSplice( countData, targets, contrast, ignoreExternal,
+      ignoreIo, ignoreI)  
   
-  group <- targets$condition
-  
-  if( is.null( contrast ) ) constrast <- .getDefaultContrasts(group)
-  
-  y <- DGEList( counts = .extractCountColumns( countData, targets ),
-      group = targets$condition,
-      genes = data.frame( 
-          locus = countData$locus, 
-          bin   = rownames( countData ) ) )
-  
-  y <- DGEList( counts = .extractCountColumns( countData, targets ),
-      group = targets$condition,
-      genes = .extractDataColumns(countData, targets) )       
-  
-  keep <- rowSums( cpm( y ) > 1) >= 2
-  y <- y[ keep, , keep.lib.sizes = FALSE ]
-  y <- calcNormFactors( y )
-  
-  design <- model.matrix( ~targets$condition )
-  y      <- estimateDisp( y, design )
-  fit    <- glmFit( y, design, contrast )
-  captured <- capture.output(
-      ds <- diffSpliceDGE( 
-          fit, contrast = contrast, geneid = "locus", exonid = "exonid" ) )
-  tsp    <- topSpliceDGE( ds, test = "exon", FDR = 1, number = INF )
-  
-  du@bins <- tsp
+  binsDU( du ) <- binsdu
   
   return( du )
+}
+
+
+
+.filterGenes <- function( counts, targets, minGenReads, minRds ) {
+  
+  dfG0 <- .filterByReads( df0 = countsg( counts ), targets = targets,
+      min = minGenReads, type = "any" )
+  
+  dfGen <- .filterByRdGen( df0 = dfG0, targets = targets,
+      min = minRds, type = "any" ) 
+  
+  return( dfGen )
+  
+} 
+
+.filterBins <- function( counts, targets, minGenReads, minBinReads, minRds, 
+    ignoreIo ) {
+  
+  dfG0 <- .filterByReads( df0 = countsg( counts ), targets = targets,
+      min = minGenReads, type = "all" )
+  
+  dfGen <- .filterByRdGen( df0 = dfG0, targets = targets, 
+      min = minRds, type = "all" )
+  
+  dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
+  
+  if( ignoreIo ) dfBin <- dfBin[dfBin[,"feature"]!="Io",]
+  
+  df1 <- .filterByReads( df0=dfBin, targets=targets, 
+      min=minBinReads, type="any" )
+  
+  df2 <- .filterByRdBinRATIO( dfBin=df1, dfGen=dfGen,
+      targets=targets, min=minRds, type="any" )
+  
+  return( list( 'genes'=dfGen, 'bins' = df2 ) )
+  
 }
 
 
@@ -250,6 +226,7 @@
   cropped <- cropped[ , targets$condition %in% pair ]
   
   # Calculates row means for conditions being compared
+  # TODO: vectorize this code
   list <- matrix( unlist( 
     lapply( pair, function( x ) {
     rowMeans( cropped[ , targets$condition == x ] ) >= min  } ) ),  
@@ -268,9 +245,11 @@
 
 
 .filterByRdGen <- function( df0, targets, min, type ) {
+  # keeps those genes which avg rd > min in any condition
   
   dens <- .extractCountColumns( df0, targets ) / df0$effective_length
   
+  # TODO: vectorize this code
   list <- matrix( unlist(
     lapply( unique( targets$condition ), 
             function( x ) {
@@ -278,7 +257,6 @@
     nrow = nrow( dens ), 
     byrow = FALSE )
 
-  #keeps those genes which ave rd > min in any condition
 
   if (type=="any")  { 
     df <- df0[ rowSums( list ) > 0             , ]
@@ -290,52 +268,6 @@
 }
 
 
-.getDefaultContrasts <- function ( conditions ) {
-	contrast <- rep( 0, length( unique( conditions ) ) )
-	contrast[1:2] <- c(-1,1)
-  return( contrast )
-}
-
-.genesDE <- function( df, targets, contrast = NULL, forceGLM = FALSE ) { 
-  
-  if( is.null( contrast ) ) contrast <- .getDefaultContrasts(targets$condition)
-  
-  cols <- match( rownames( targets ), colnames( df ) )
-  
-  group <- targets$condition
-  
-  er <- DGEList( counts = df[ , cols ], samples=targets, group=group)
-  er <- calcNormFactors( er )
-  
-  justTwoConditions <- sum( contrast != 0 ) == 2
-  
-  if( justTwoConditions & ! forceGLM ){
-    capture.output( er   <- estimateDisp( er ) )
-    pair <- which( contrast != 0 )
-    et   <- exactTest(er, pair=pair)
-  } else {
-    design <- model.matrix( ~0 + group, data = er$samples )
-    
-    cat("design:\n")
-    cat(design)
-    cat("\n")
-    er     <- estimateDisp( er, design = design )
-    glf    <- glmFit( er, design = design)  
-    et     <- glmLRT( glf, contrast = contrast)
-  } 
-  
-  fdr.gen <- p.adjust( et$table$PValue, method="BH" )
-  
-  cols <- match(rownames( targets ), colnames( df ) )
-  geneData <- .extractDataColumns( df, targets )
-  genesFull <- data.frame( geneData ,
-      logFC = as.numeric( et$table$logFC ), 
-      pvalue = as.numeric( et$table$PValue ), 
-      gen.fdr = as.numeric(fdr.gen), 
-      stringsAsFactors = FALSE)
-  rownames( genesFull ) <- rownames( df )
-  return( genesFull )
-}
 
 
 .filterByRdBinRATIO <- function( 
@@ -344,7 +276,6 @@
     targets, 
     min, 
     type ) {
-  
 
   # -------------------------------------------------------------------------- #
   # Get densities for genes and bins
@@ -354,6 +285,7 @@
   
   # -------------------------------------------------------------------------- #
   # Calculates avg. bin dentity by condition
+  # TODO: vectorize this code
   avRdBin <- matrix( unlist(
           lapply( unique( targets$condition ), 
               function( x ) { 
@@ -365,6 +297,7 @@
   
   # -------------------------------------------------------------------------- #
   # Calculates avg. gene dentity by condition
+  # TODO: vectorize this code
   avRdGen <- matrix( unlist(
           lapply( unique( targets$condition ), 
               function(x) rowMeans(genes.rd[ , targets$condition == x]))),  
@@ -424,6 +357,52 @@ return (dfBin)
 }
 # ---------------------------------------------------------------------------- #
 
+.getDefaultContrasts <- function ( conditions ) {
+  contrast <- rep( 0, length( unique( conditions ) ) )
+  contrast[1:2] <- c(-1,1)
+  return( contrast )
+}
+
+.genesDE <- function( df, targets, contrast = NULL, forceGLM = FALSE ) { 
+  
+  if( is.null( contrast ) ) contrast <- .getDefaultContrasts(targets$condition)
+  
+  cols <- match( rownames( targets ), colnames( df ) )
+  
+  group <- targets$condition
+  
+  er <- DGEList( counts = df[ , cols ], samples=targets, group=group)
+  er <- calcNormFactors( er )
+  
+  justTwoConditions <- sum( contrast != 0 ) == 2
+  
+  if( justTwoConditions & ! forceGLM ){
+    capture.output( er   <- estimateDisp( er ) )
+    pair <- which( contrast != 0 )
+    et   <- exactTest(er, pair=pair)
+  } else {
+    groupFactor <- factor( group, unique( group ), ordered = TRUE )
+    design   <- model.matrix( ~0 + groupFactor, data = er$samples )
+    captured <- capture.output(
+        er     <- estimateDisp( er, design = design )
+    )
+    glf    <- glmFit( er, design = design)  
+    et     <- glmLRT( glf, contrast = contrast)
+  } 
+  
+  fdr.gen <- p.adjust( et$table$PValue, method="BH" )
+  
+  cols <- match(rownames( targets ), colnames( df ) )
+  geneData <- .extractDataColumns( df, targets )
+  genesFull <- data.frame( geneData ,
+      logFC = as.numeric( et$table$logFC ), 
+      pvalue = as.numeric( et$table$PValue ), 
+      gen.fdr = as.numeric(fdr.gen), 
+      stringsAsFactors = FALSE)
+  rownames( genesFull ) <- rownames( df )
+  return( genesFull )
+}
+
 
 .binsDU <- function (
       df,
@@ -479,6 +458,51 @@ return (dfBin)
   # -------------------------------------------------------------------------- #
   
 }
+
+.binsDUWithDiffSplice <- function( countData, targets, contrast, 
+    ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = TRUE ) {
+  
+  # Filter bins
+  countData = countData[ ! ignoreExternal | countData$event != "external" ,] 
+  countData = countData[ ! ignoreIo | countData$feature != "Io" ,] 
+  countData = countData[ ! ignoreI | countData$feature != "I" ,] 
+  
+  # Define group and contrast
+  group <- targets$condition
+  if( is.null( contrast ) ) contrast <- .getDefaultContrasts( group )
+  
+  # make DU analysis
+  y <- DGEList( counts = .extractCountColumns( countData, targets ),
+      group = group,
+      genes = .extractDataColumns(countData, targets) )       
+  
+  # TODO: Este filtro es muy resctrictivos
+  #  keep <- rowSums( cpm( y ) > 1) >= 2
+  #  y <- y[ keep, , keep.lib.sizes = FALSE ]
+  y <- calcNormFactors( y )
+  
+  
+  # model.matrix sort columns alphabetically if formula has characters instead 
+  # of factors. Therefore to preserve order group is converted to ordered factors 
+  groupFactor <- factor( group, unique( group ), ordered = TRUE )
+  
+  design <- model.matrix( ~0 + groupFactor, data = y$samples )
+  
+  
+  y   <- estimateDisp( y, design )
+  fit <- glmFit( y, design )
+  ds  <- diffSpliceDGE( fit, contrast = contrast, geneid = "locus", 
+      exonid = NULL, verbose = FALSE )
+  tsp <- topSpliceDGE( ds, test = "exon", FDR = 2, number = Inf )
+  
+  # make column names equal to the results of DUReport method
+  colnames( tsp )[ match( 'FDR', colnames( tsp )) ] <- 'bin.fdr'
+  colnames( tsp )[ match( 'P.Value', colnames( tsp )) ] <- 'pvalue'
+  tsp$exon.LR <- NULL
+  
+  return( tsp )
+  
+} 
 
 .junctionsDU_SUM <- function( df, 
                               dfGen,
@@ -563,12 +587,14 @@ return (dfBin)
   ratioStart <- data.frame( df[,cols],dffStart)
   colnames(ratioStart) <- rep(rownames( targets ),2)
   #aca hay que armar un df itnermedio con la suma por condicion:
+
+  # TODO: vectorize this code
   ff <- rep(group,2)
   colnames(ratioStart) <- paste(ff, rep(1:2,each=length(group)))
   dfSum <- t(apply(ratioStart, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(ratioStart), 
                 sum)}))
-  colnames(dfSum) <- rep(unique(group), each=2)
+  colnames(dfSum) <- rep(unique(group), each=2) # old version
   
   jratioStartRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(dfSum), 
@@ -616,10 +642,13 @@ return (dfBin)
   
   ratioEnd <- data.frame(df[,cols],dffEnd)
   ff <- rep(group,2)
-  colnames(ratioEnd) <- paste(ff, rep(1:2,length(group)))
+  colnames(ratioEnd) <- paste(ff,rep(1:2, each = length(group)))
+  # TODO: vectorize this code
   dfSum <- t(apply(ratioEnd, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(ratioEnd), sum  )}))
-  colnames(dfSum) <- rep(unique(group),each=2)
+
+  colnames(dfSum) <- rep(unique(group), each = 2) # new version
+  
   jratioEndRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(dfSum), jratio )}))
 
@@ -656,12 +685,15 @@ return (dfBin)
                      genes  = data.frame( locus = rownames(countData) ) )
       
       #filter lowcount genes
+      # TODO: Los datos que llegan acá ya están filtrados por low counts usando
+      # los filtros de ASpli. ¿ Es necesario incluir este filtro ?
       keep <- rowSums(cpm(yg)>1) >= 2
       yg <- yg[keep, , keep.lib.sizes=FALSE]
       
       yg     <- calcNormFactors(yg)
       fc     <- targets$condition
-      design <- model.matrix(~0+fc)
+      groupFactor <- factor( fc, unique( fc ), ordered = TRUE )
+      design <- model.matrix(~0+groupFactor)
       yg     <- estimateDisp(yg,design)
       fitg   <- glmFit(yg,design)
       maux   <- fitg$fitted.values + 10^-4
@@ -669,6 +701,7 @@ return (dfBin)
       maux   <- dfGen[,rownames(targets)] + 10^-4
     }
   } else {
+    # TODO: ¿ Es necesario vectorizar esto ?
     a <- by( data = df[,c("feature",rownames(targets))],
              INDICES = as.factor( locus ),
              FUN = function(x){ 
@@ -707,7 +740,7 @@ return (dfBin)
   
   group <- targets$condition
   
-  if( is.null( contrast ) ) constrast <- .getDefaultContrasts(group)
+  if( is.null( contrast ) ) contrast <- .getDefaultContrasts(group)
   
   er <- DGEList( counts  = df[,cols],
                  samples = targets,
@@ -717,25 +750,26 @@ return (dfBin)
   
   justTwoConditions <- sum( contrast != 0 ) == 2
   
-  # TODO: Forzar GLM no tiene efecto si se pasa un offset. 
-  if( ! forceGLM & is.null( mOffset ) & justTwoConditions ){
+  if( ( !forceGLM ) & is.null( mOffset ) & justTwoConditions ){
 
-    er   <- estimateDisp( er )
+    captured <- capture.output(
+      er   <- estimateDisp( er )
+    )
     pair <- which( contrast != 0 )
     testResult   <- exactTest( er, pair = pair )
     
-#    if( verbose ) message( "ExactTest... done\n" )
+#    message( "ExactTest... done" )
     
   } else {
     
     if( ! is.null( mOffset ) ) er <- .setDefaultOffsets( er, mOffset ) 
-    
-    design     <- model.matrix( ~0 + group, data = er$samples )
+    groupFactor <- factor( group, unique( group ), ordered = TRUE )
+    design     <- model.matrix( ~0 + groupFactor, data = er$samples )
     er         <- estimateDisp( er, design = design )      
     glf        <- glmFit( er, design = design )  
     testResult <- glmLRT( glf, contrast = contrast )
     
-#    if( verbose ) message( "glmLRT... done\n" )
+#    message( "glmLRT... done" )
 
   } 
   return( testResult )

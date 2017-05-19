@@ -1,51 +1,93 @@
 \name{DUreport}
+
 \alias{DUreport}
+
 \title{
-Differential gene expression and differential bin/junction usage estimation
+  Differential gene expression and differential bin usage estimation
 }
 \description{
-Estimate differential expression at gene level and differential usage at bin and junction level.
+  Estimate differential expression at gene level and differential usage at bin 
+  level.
 }
+
 \usage{
-DUreport(counts, targets, minGenReads, minBinReads,
-                 minRds, offset = FALSE, offsetAggregateMode,
-                 offsetUseFitGeneX = TRUE,
-                 contrast = NULL, 
-                 forceGLM = FALSE, 
-                 ignoreExternal =TRUE, 
-                 ignoreIo = TRUE, 
-                 ignoreI = FALSE)
-
-
+  DUreport( counts, 
+            targets, 
+            minGenReads = 10, 
+            minBinReads = 5,
+            minRds = 0.05, 
+            offset = FALSE, 
+            offsetAggregateMode =  c( "geneMode", "binMode" )[2],
+            offsetUseFitGeneX = TRUE,
+            contrast = NULL, 
+            forceGLM = FALSE, 
+            ignoreExternal = TRUE, 
+            ignoreIo = TRUE, 
+            ignoreI = FALSE)
 }
 
 \arguments{
-\item{counts}{
-An object of class ASpliCounts
+  \item{ counts }{ 
+    An object of class ASpliCounts
+  }
+  \item{ targets }{
+    A dataframe containing sample, bam and experimental factor columns 
+  }
+  \item{ minGenReads }{
+    Genes with at least an average of \code{minGenReads} reads for any condition 
+    are included into the differential expression test.
+    Bins from genes with at least an average of \code{minGenReads} reads for all
+    conditions are included into the differential bin usage test.
+    Default value is 10 reads.
+  }
+  \item{ minBinReads }{ 
+    Bins with at least an average of \code{minGenReads} reads for any condition 
+    are included into the differential bin usage test.
+    Default value is 5 reads.
+  }
+  \item{ minRds }{
+    Genes with at least an average of \code{minRds} read density for any 
+    condition are included into the differential expression test.
+    Bins from genes with at least an average of \code{minRds} read density for 
+    all conditions are included into the differential bin usage test.
+    Bins with at least an average of \code{minRds} read density for any 
+    condition are included into the differential bin usage test.
+    Default value is 0.05.
+    }
+  \item{ignoreExternal}{
+    Ignore Exon Bins at the beginning or end of the transcript. 
+    Default value is TRUE. 
+  }
+  \item{ignoreIo}{ Ignore original introns.  Default TRUE }
+  \item{ignoreI}{Ignore intron bins, test is performed only for exons. 
+    Default FALSE }
+  \item{offset}{ Corrects bin expression using an offset model. Default = FALSE }
+  \item{offsetAggregateMode}{ Options:=c( “geneMode”, “binMode” )[ 2 ] },
+  \item{offsetUseFitGeneX}{ Default= TRUE } 
+  \item{contrast}{ Define the comparison between conditions to be tested.
+    \code{contrast} should be a vector with length equal to the number of 
+    experimental conditions defined by \code{targets}. The values of this vector
+    are the coefficients that will be used to weight each condition, the order 
+    of the values corresponds to the order given by \code{getConditions} 
+    function. When \code{contrast} is NULL, defaults to a vector containing -1,
+    as the first value, 1 as the second an zero for all the remaining values, 
+    this corresponds to a pair comparison where the first condition is assumed 
+    to be a control and the second condition is the treatment, all other 
+    conditions are ignored. 
+    Default = NULL}
+  \item{forceGLM}{ Default = FALSE}
 }
-\item{targets}{
-A dataframe containing sample, bam and condition columns 
-}
-\item{minGenReads}{Default 10 reads}
-\item{minBinReads}{Default 5 reads}
-\item{minRds}{Default 0.05}
-\item{ignoreExternal}{Ignore Exon Bins at the beggining or end of the transcript. Default TRUE}
-\item{ignoreIo}{Ignore original introns. Default TRUE}
-\item{ignoreI}{Ignore intron bins . Default FALSE}
-\item{offset}{Default = FALSE}
-\item{offsetAggregateMode}{Options:=c( “geneMode”, “binMode” )[ 2 ]},
-\item{offsetUseFitGeneX}{Default= TRUE} 
-\item{contrast}{ Default = NULL}
-\item{forceGLM}{ Default = FALSE}
-
-}
 
 
-\value{ An ASpliDU object with results at \code{genes}, \code{bins} and \code{junctions} level }
+\value{ 
+  An ASpliDU object with results at \code{genes}, \code{bins} }
+
 \author{
-Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
+  Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
 }
+
 \examples{
+
 library(RNAseqData.HNRNPC.bam.chr14)
 chr14 <- system.file("extdata","chr14.sqlite", package="ASpli")
 genome <- loadDb(chr14)
