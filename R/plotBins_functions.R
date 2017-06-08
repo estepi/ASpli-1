@@ -359,7 +359,7 @@ makeXticksLabels <- function( justOneFactor, gridPanels, factorsAndValues,
       if ( (! is.na( deviceIndex )) && deviceIndex ==  5 ) {
         fileNameOpt <- list( file = outfile)
         defaultDeviceOpt <- list( height = 7.5, width = 3, 
-            pointsize = 12,)        
+            pointsize = 12)        
       }
       
       deviceOpt <- if ( undefDeviceOpt ) 
@@ -447,7 +447,7 @@ makeXticksLabels <- function( justOneFactor, gridPanels, factorsAndValues,
   # Close graphic device if required
   if ( outputIsAValidFile ) {
     output <- capture.output( dev.off() )
-  }
+  } 
   # -------------------------------------------------------------------------- #
   
 }

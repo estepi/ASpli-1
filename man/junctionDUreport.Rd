@@ -1,68 +1,59 @@
-\name{DUreport}
+\name{junctionDUreport}
 
-\alias{DUreport}
+\alias{junctionDUreport}
 
 \title{
-  Differential gene expression and differential bin usage estimation
+  Differential junction usage estimation
 }
 \description{
-  Estimate differential expression at gene level and differential usage at bin 
-  level. When targets has only two conditions, and contrast is not set, the 
-  estimation of differential expression and usage is done with an exact test,
-  otherwise is estimated using a generalized linear model.    
+  Estimate differential usage at junction level. When targets has only two 
+  conditions, and contrast is not set, the estimation of differential expression
+  and usage is done with an exact test, otherwise is estimated using a 
+  generalized linear model.
 }
 
 \usage{
-  DUreport( counts, 
-            targets, 
-            minGenReads = 10, 
-            minBinReads = 5,
-            minRds = 0.05, 
-            offset = FALSE, 
-            offsetAggregateMode =  c( "geneMode", "binMode" )[2],
-            offsetUseFitGeneX = TRUE,
-            contrast = NULL, 
-            forceGLM = FALSE, 
-            ignoreExternal = TRUE, 
-            ignoreIo = TRUE, 
-            ignoreI = FALSE)
+  junctionDUreport( counts, 
+                    targets,
+                    appendTo = NULL, 
+                    minGenReads = 10, 
+                    minRds = 0.05,
+                    threshold = 5,
+                    offset = FALSE, 
+                    offsetAggregateMode =  c( "geneMode", "binMode" )[2],
+                    offsetUseFitGeneX = TRUE,
+                    contrast = NULL, 
+                    forceGLM = FALSE)
 }
 
 \arguments{
   \item{ counts }{ 
-    An object of class ASpliCounts
+    An object of class \code{ASpliCounts}
   }
   \item{ targets }{
     A dataframe containing sample, bam and experimental factor columns.
   }
+  \item{ appendTo }{ An object of class \code{ASpliDU} to which append the 
+    results of junction differential usage. If \code{appendTo} is \code{NULL} a 
+    new \code{ASpliDU} is created
+  }  
   \item{ minGenReads }{
-    Genes with at least an average of \code{minGenReads} reads for any condition 
-    are included into the differential expression test.
-    Bins from genes with at least an average of \code{minGenReads} reads for all
-    conditions are included into the differential bin usage test.
+    Junctions within genes with at least an average of \code{minGenReads} reads
+    for all conditions are included into the differential junction usage test.
     Default value is 10 reads.
   }
-  \item{ minBinReads }{ 
-    Bins with at least an average of \code{minGenReads} reads for any condition 
-    are included into the differential bin usage test.
-    Default value is 5 reads.
-  }
   \item{ minRds }{
-    Genes with at least an average of \code{minRds} read density for any 
-    condition are included into the differential expression test.
-    Bins from genes with at least an average of \code{minRds} read density for 
-    all conditions are included into the differential bin usage test.
-    Bins with at least an average of \code{minRds} read density for any 
-    condition are included into the differential bin usage test.
+    Junctions within genes with at least an average of \code{minRds} read 
+    density for all conditions are included into the differential bin usage 
+    test. Junctions with at least an average of \code{minRds} read density for
+    any condition are included into the differential junction usage test.
     Default value is 0.05.
-    }
-  \item{ignoreExternal}{
-    Ignore Exon Bins at the beginning or end of the transcript. 
-    Default value is TRUE. }
-  \item{ignoreIo}{ Ignore original introns.  Default TRUE }
-  \item{ignoreI}{Ignore intron bins, test is performed only for exons. 
-    Default FALSE }
-  \item{offset}{ Corrects bin expression using an offset matrix derived from 
+  }
+  \item{threshold}{
+    Junction with at least \code{threshold} counts are included into the 
+    differential usage test.
+  }
+  \item{offset}{ Corrects junction counts using an offset matrix derived from 
     gene expression data. Default = FALSE}
   \item{offsetAggregateMode}{ Choose the method to aggregate gene counts to 
     create the offset matrix. When \code{offsetAggregateMode} is 'geneMode' and 
@@ -71,8 +62,8 @@
     and option \code{offsetUseFitGeneX} is FALSE, the offset matrix is generated
     by adding a prior count to the gene count matrix. When 
     \code{offsetAggregateMode} is 'binMode' a matrix from obtained from the sum
-    of exonic bin counts, this only takes those bins that passes filters using 
-    minGenReads, minBinReads and minRds.
+    of exonic bin counts, this only takes those junctions that passes filters
+    using minGenReads, threshold and minRds.
     Options:=c( “geneMode”, “binMode” )[ 2 ] },
   \item{offsetUseFitGeneX}{ Default= TRUE } 
   \item{contrast}{ Define the comparison between conditions to be tested.
@@ -91,7 +82,7 @@
 }
 
 \value{ 
-  An ASpliDU object with results at \code{genes}, \code{bins} level.}
+  An \code{ASpliDU} object with results of differential usage of junctions }
 
 \author{
   Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
@@ -121,8 +112,12 @@
   counts   <- readCounts( features, bams, targets, cores = 1, readLength = 100, 
                           maxISize = 50000 )
   
+  # Calculate differential usage of junctions only 
+  du       <- junctionDUReport( counts, targets )
+
   # Calculate differential usage of genes, bins and junctions 
-  du       <- DUreport( counts, targets )
+  du2       <- DUreport( counts, targets )
+  du2       <- junctionDUReport( counts, targets, appendTo = du2 )
 
   # Export results  
   writeDU( du = du, output.dir = "only_du" )
@@ -130,8 +125,8 @@
 
 \seealso{
   \code{\link{edgeR}}, \code{\link{junctionDUReport}}
-  Accessors: \code{\link{genesDE}}, \code{\link{binsDU}}
-  Export: \code{ \link{writeDU} }
+  Accessors: \code{\link{junctionsDU}}
+  Export: \code{\link{writeDU}}
 }
 
 

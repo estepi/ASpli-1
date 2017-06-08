@@ -136,7 +136,8 @@ setMethod(
   definition = function(counts, targets) {
     geneStart <- ncol(countsg(counts))-nrow(targets)+1
     gene.rd <- cbind( countsg(counts)[,1:geneStart-1], 
-                      countsg(counts)[,geneStart:ncol(countsg(counts))]/countsg(counts)$effective_length
+                      countsg(counts)[,geneStart:ncol(countsg(counts))] / 
+                          countsg(counts)$effective_length
                    )
     binStart <- ncol(countsb(counts))-nrow(targets)+1
     bin.rd <- cbind(countsb(counts)[, 1:binStart-1], 
@@ -156,14 +157,16 @@ setMethod(
 # readCounts
 setGeneric (
   name = "readCounts",
-  def = function( features, bam,  targets, cores = 1, readLength, maxISize, minAnchor = NULL)
+  def = function( features, bam,  targets, cores = 1, readLength, maxISize, 
+      minAnchor = NULL)
   standardGeneric("readCounts") )
 
 setMethod(
   f = "readCounts",
   signature = "ASpliFeatures",
-  definition = function( features, bam,  targets, cores = 1, readLength,  maxISize, minAnchor = 10) 
-    {
+  definition = function( features, bam,  targets, cores = 1, readLength,  
+      maxISize, minAnchor = 10) {
+
     counts <- new(Class="ASpliCounts")
     minA <- round( minAnchor * readLength / 100 )
     
@@ -491,7 +494,8 @@ setGeneric (
         forceGLM = FALSE,
         ignoreExternal = TRUE,
         ignoreIo = TRUE, 
-        ignoreI = FALSE  
+        ignoreI = FALSE,
+        filterWithContrasted = FALSE
       ) standardGeneric("DUreport") )
 
 #setGeneric (
@@ -513,26 +517,31 @@ setMethod(
       forceGLM = FALSE,
       ignoreExternal = TRUE,
       ignoreIo = TRUE, 
-      ignoreI = FALSE  
+      ignoreI = FALSE,
+      filterWithContrasted = FALSE  
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
           offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
-        ignoreExternal, ignoreIo, ignoreI )
+        ignoreExternal, ignoreIo, ignoreI, filterWithContrasted )
   }
 )
 
 setGeneric( name = 'DUreportBinSplice',
     def = function( counts, targets, minGenReads  = 10, minBinReads = 5, 
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreIo = TRUE ) 
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE,  
+        ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE, 
+        filterWithContrasted = FALSE ) 
       standardGeneric( 'DUreportBinSplice'))
 
 setMethod( 
     f = 'DUreportBinSplice',
     signature = 'ASpliCounts',
     definition = function( counts, targets, minGenReads  = 10, minBinReads = 5,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreIo = TRUE ) {
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreExternal = TRUE,
+        ignoreIo = TRUE, ignoreI = FALSE, filterWithContrasted = FALSE ) {
       .DUreportBinSplice( counts, targets, minGenReads, minBinReads, minRds, 
-          contrast, forceGLM, ignoreIo ) 
+          contrast, forceGLM, ignoreExternal, ignoreIo, ignoreI, 
+          filterWithContrasted ) 
     })
 
 setGeneric( name = "junctionDUReport",
@@ -599,7 +608,7 @@ setMethod(
       if( offset ){
         warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
         mOffset <- getOffsetMatrix( 
-            dfBin, 
+            df, 
             dfGen,
             targets,
             offsetAggregateMode = offsetAggregateMode,

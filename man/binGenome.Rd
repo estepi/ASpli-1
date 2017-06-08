@@ -54,19 +54,18 @@
   always at 5'.
 }
 
-  \value{ An ASpliFeatures object. It is  a list of features using GRanges 
-    format. }
+\value{ An ASpliFeatures object. It is  a list of features using GRanges 
+  format. }
 
-  \author{Estefania Mancini, Javier Iserte, Marcelo Yanovsky, 
-    Ariel Chernomoretz}
+\author{Estefania Mancini, Javier Iserte, Marcelo Yanovsky, 
+  Ariel Chernomoretz}
 
-  \seealso{ 
-    \code{\link{featuresg}}, 
-    \code{\link{featuresb}},
-    \code{\link{featuresj}} 
-  }
-
+\seealso{ 
+  \code{\link{featuresg}}, 
+  \code{\link{featuresb}},
+  \code{\link{featuresj}} 
 }
+
 
 \examples{
   # Create a transcript DB from gff/gtf annotation file.

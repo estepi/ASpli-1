@@ -11,7 +11,7 @@ biocViews: GeneExpression, Transcription, AlternativeSplicing,
 Depends: methods,GenomicRanges,GenomicFeatures,edgeR,BiocGenerics,
         IRanges, GenomicAlignments, Gviz, grDevices,
         stats, utils, S4Vectors, AnnotationDbi, parallel, graphics
-Suggests: RNAseqData.HNRNPC.bam.chr14, BiocStyle
+Suggests: BiocStyle
 Maintainer: Estefania Mancini <emancini@leloir.org.ar>
-Description: Integrative pipeline for the analyisis of alternative
+Description: Integrative pipeline for the analysis of alternative
         splicing using RNAseq.

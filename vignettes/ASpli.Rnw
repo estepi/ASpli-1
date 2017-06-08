@@ -10,21 +10,46 @@ options(continue=" ")
 \usepackage{verbatim} 
 \usepackage{caption} 
 \usepackage{cite}
-\usepackage{subcaption} 
-\title{\texttt{ASpli}: An integrative R package for analysing alternative splicing using RNAseq}
+\usepackage{subcaption}
+
+\title{\texttt{ASpli}: An integrative R package for analysing alternative 
+  splicing using RNAseq}
+
 \author{Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz}
+
 \begin{document}
 
 \SweaveOpts{concordance=TRUE}
+
 \maketitle
+
 \tableofcontents
+
 \section{Introduction}
-Alternative splicing (AS) is a common mechanism of post-transcriptional gene regulation in eukaryotic organisms that expands the functional and regulatory diversity of a single gene by generating multiple mRNA isoforms that encode structurally and functionally distinct proteins. The development of novel high-throughput sequencing methods for RNA (RNA-Seq) has provided a powerful means of studying AS under multiple conditions and in a genome-wide manner \cite{pmid24549677}. However, using RNA-seq to study changes in AS under different experimental conditions is not trivial. 
-In this vignette, we describe how to use ASpli, an integrative and user-friendly R package that facilitates the analysis of changes in both annotated and novel AS events. This package combines statistical information from exon, intron, and splice junction differential usage (p-value, FDR), with information from splice junction reads to calculate differences in the percentage of exon inclusion ($\Delta$  PSI) and intron retention ($\Delta$PIR). The proposed methodology reliably reflect the magnitude of changes in the relative abundance of different annotated and novel AS events. This method can be used to analyze both simple and complex experimental designs involving multiple experimental conditions
+
+Alternative splicing (AS) is a common mechanism of post-transcriptional gene 
+regulation in eukaryotic organisms that expands the functional and regulatory 
+diversity of a single gene by generating multiple mRNA isoforms that encode 
+structurally and functionally distinct proteins. The development of novel 
+high-throughput sequencing methods for RNA (RNA-Seq) has provided a powerful 
+means of studying AS under multiple conditions and in a genome-wide manner 
+\cite{pmid24549677}. However, using RNA-seq to study changes in AS under 
+different experimental conditions is not trivial. 
+In this vignette, we describe how to use ASpli, an integrative and user-friendly
+R package that facilitates the analysis of changes in both annotated and novel 
+AS events. This package combines statistical information from exon, intron, and 
+splice junction differential usage (p-value, FDR), with information from splice 
+junction reads to calculate differences in the percentage of exon inclusion 
+($\Delta$  PSI) and intron retention ($\Delta$PIR). The proposed methodology 
+reliably reflect the magnitude of changes in the relative abundance of different 
+annotated and novel AS events. This method can be used to analyze both simple 
+and complex experimental designs involving multiple experimental conditions.
 
 \section{Getting started}
 
-BAM files of each sample and gene annotation are mandatory. Make sure all files use the same coordinate system. It is a good practice to organize all required files (or symbolic links of them) together into the  working directory.
+BAM files of each sample and gene annotation are mandatory. Make sure all files 
+use the same coordinate system. It is a good practice to organize all required 
+files (or symbolic links of them) together into the  working directory.
 
 \subsection{Installation}
 ASpli is available at Bioconductor site and can be downloaded using
@@ -37,46 +62,80 @@ biocLite("ASpli")
 library(ASpli)
 @
  
-\texttt{biocLite()} will take care of installing all the packages that ASpli depends on e.g. edgeR, GenomicFeatures, GenomicRanges, GenomicAlignments, Gviz, and more...
+\texttt{biocLite()} will take care of installing all the packages that ASpli 
+depends on e.g. edgeR, GenomicFeatures, GenomicRanges, GenomicAlignments, Gviz, 
+and other R package required. Some package depends on operating system packages,
+like \texttt{curl} that are not installed automatically. 
+
 
 \subsection{Building a \texttt{TxDb} of your genome }
-Gene annotation is handled using \texttt{TxDb} objects. The building of a \texttt{TxDb} object might be time consuming, depending on the size of your genome. If a \texttt{TxDb} has been already created, we strongly recommend  saving it as a \texttt{sqlite} file and reloading it any time the analysis is run.  The \texttt{GenomicFeatures} package provides functions to create TxDb objects based on data downloaded from UCSC Genome Bioinformatics, BioMart or gff/gtf files. See "Creating New TxDb Objects or Packages" in the \texttt{GenomicFeatures} vignette for more details. In this example, a TxDb is built from a gtf file:
+Gene annotation is handled using \texttt{TxDb} objects. The building of a 
+\texttt{TxDb} object might be time consuming, depending on the size of your 
+genome. If a \texttt{TxDb} has been already created, we strongly recommend  
+saving it as a \texttt{sqlite} file and reloading it any time the analysis is 
+run. The \texttt{GenomicFeatures} package provides functions to create TxDb 
+objects based on data downloaded from UCSC Genome Bioinformatics, BioMart or 
+gff/gtf files. See "Creating New TxDb Objects or Packages" in the 
+\texttt{GenomicFeatures} vignette for more details. In this example, a TxDb is 
+built from a gtf file:
 
 <<makeTx, echo=TRUE, eval=FALSE>>=
+library(GenomicFeatures)
 TxDb <- makeTxDbFromGFF(
   file="genes.gtf",
   format="gtf")
 @
 
 \section{Running \texttt{ASpli}}
-\texttt{ASpli} is divided in four independent steps or modules (Figure 1) : 
+
+\texttt{ASpli} is divided in four independent steps (Figure 
+\ref{fig:ASpliStructure}). For each of these steps ASpli provides a single or 
+few functions to use:
 \begin{enumerate}
-  \item Feature extraction: \texttt{binGenome()}
-  \item Read counting \texttt{readCounts()}
-\item Alternative splicing discovery using junctions \texttt{AsDiscover()}
-\item DE and DU estimation \texttt{DUreport()}
+  \item Feature extraction: \texttt{ binGenome() }
+  \item Read counting: \texttt{ readCounts() }
+  \item Alternative splicing discovery using junctions: \texttt{ AsDiscover() }
+  \item DE and DU estimation \texttt{ DUreport(), junctionDUReport() and
+  DUreportBinSplice() })
 \end{enumerate}
-At each step it is possible to export results in a friendly manner. See Section "3.5 Outputs and results" for more details.
+
+At each step it is possible to export results in a friendly manner. 
+See Section "3.5 Outputs and results" for more details.
 
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.5\textwidth]{wf.png}
-\caption{Objects (squares) and methods (in blue) in ASpli package.  Accesors and write methods are in red.}
+\caption{Objects (squares) and methods (in blue) in ASpli package.  
+  Accesors and write methods are in red. }
+\label{fig:ASpliStructure}
 \end{figure}
 
-\subsection{To BIN or not to BIN} %1
-Sub-genic features such as exons and introns are analyzed using existing annotations by splitting the genome into non-overlapping features called bins, as described previously for DEXSeq \cite{pmid22722343}. Exon and intron coordinates are then extracted from the annotation, but only those from multi-exonic genes are saved for further evaluation. When more than one isoform exists, some exons and introns will overlap. Exons and introns are then subdivided into new features called exon and intron bins, and are then classified into exclusively exonic bins, exclusively intronic bins, or alternative splicing (AS) bins (See Figure 2). Each AS bin is then labeled as follows, according to the type of AS event it represents: 
+\subsection{ To BIN or not to BIN } %1
+Sub-genic features such as exons and introns are analyzed using existing
+annotations by splitting the genome into non-overlapping features called bins, 
+as described previously for DEXSeq \cite{pmid22722343}. Exon and intron 
+coordinates are then extracted from the annotation, but only those from 
+multi-exonic genes are saved for further evaluation. When more than one isoform 
+exists, some exons and introns will overlap. Exons and introns are then 
+subdivided into new features called exon and intron bins, and are then 
+classified into exclusively exonic bins, exclusively intronic bins, or 
+alternative splicing (AS) bins (See Figure 2). Each AS bin is then labeled as 
+follows, according to the type of AS event it represents:
 
 \begin{itemize}
-\item \textbf {ES} (exon skipping)
-\item \textbf {IR} (intron retention)
-\item \textbf {ALt5'SS} alternative five prime splicing site
-\item \textbf {ALt3'SS} alternative three prime splicing site
-\item "*" (ES*, IR*, AltSS*) for bins involved in more than one AS event type
+\item \textbf {ES} (Exon skipping)
+\item \textbf {IR} (Intron retention)
+\item \textbf {ALt5'SS} Alternative five prime splicing site
+\item \textbf {ALt3'SS} Alternative three prime splicing site
+\item "*" (ES*, IR*, AltSS*) For bins involved in more than one AS event type
 \item \textbf {external}: beginning or end of a transcript
 \end{itemize}
 
-Annotated junctions from all the transcripts are also reported. Junction coordinates are defined as the last position of the five prime exon (donor position) and first position of the three prime exon (acceptor)
+
+
+Annotated junctions from all the transcripts are also reported. Junction 
+coordinates are defined as the last position of the five prime exon (donor 
+position) and first position of the three prime exon (acceptor).
 
 Subgenic features are labeled as follow (hypothetical GeneAAA):
 \begin{itemize}
@@ -86,18 +145,25 @@ Subgenic features are labeled as follow (hypothetical GeneAAA):
 \item \textbf{GeneAAA:J001}: defines first junction
 \end{itemize}
 
-Bins and junctions are labeled always in  5' to 3' sense of the plus strand. This implies that  bins and junctions with lower numbering are always closer to the 5' of that strand.
-
+Bins and junctions are labeled always in  5' to 3' sense of the plus strand of
+the reference sequence. This implies that  bins and junctions with lower 
+numbering are always closer to the 5' of that strand.
   
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.3\textwidth]{binDefinition.png}
-\caption{Scheme of resulting bins from a gene with two hypothetical transcripts. Those bins that are exonic or intronic at the same time are named \textit{AS bins}. The junctions repertoire is also shown.
+\caption{Scheme of resulting bins from a gene with two hypothetical transcripts. 
+Those bins that are exonic or intronic at the same time are named \textit{AS
+bins}. The junctions repertoire is also shown.
 }
+\label{fig:ASpliStructure}
 \end{figure}
 
 
-The \texttt{binGenome} method allows us to  extract genome coordinates at the gene, exon, intron and junction level and returns an object of class \texttt{ASpliFeatures}. Then, features cordinates could be extractd using their accesors:
+The \texttt{binGenome} method allows us to  extract genome coordinates at the 
+gene, exon, intron and junction level and returns an object of class 
+\texttt{ASpliFeatures}. Then, features cordinates could be extractd using their 
+accesors:
 
 <<binGenome, echo=TRUE, eval=FALSE>>=
 features <- binGenome(TxDb) 
@@ -108,14 +174,18 @@ JunctionsCoord <- featuresj(features)
 
 \subsection{Read Counting} 
 \subsubsection{Mapping file and bam loading}%3.2.1
-Sample names, full path of BAM files and experimental factors should be specified in a dataframe (i.e. \texttt{targets}) under the header: \texttt{bam} and \texttt{condition}, and sample names as rownames. For example: for a one factor experiment with 2 replicates for each condition (Control and Mutant):
+Sample names, full path of BAM files and experimental factors should be 
+specified in a dataframe (i.e. \texttt{targets}) under the header: \texttt{bam} 
+and \texttt{condition}, and sample names as rownames. For example: for a one 
+factor experiment with 2 replicates for each condition (Control and Mutant):
 <<targetsDF, echo=TRUE, eval=TRUE>>=
 bamFiles <- c("Ct1.bam", "Ct2.bam", "Mut1.bam","Mut2.bam" )
 targets <- data.frame(bam=bamFiles,
                     condition=rep(c("CT", "Mut"), each=2), 
-                    row.names=sub("\\.bam$", "", bamFiles))
+                    row.names=sub('\\.bam\\\$', "", bamFiles))
 @ 
-More sofisticated designs, should be specified as follow, For example: for a two factor experiment with 2 replicates for each condition (Control, Mutant, Time1, Time2):
+More sofisticated designs, should be specified as follow, For example: for a two
+factor experiment with 2 replicates for each condition (Control, Mutant, Time1, Time2):
 <<targetsDF2, echo=TRUE, eval=TRUE>>=
 bkg <- rep(c("CT", "Mut"), each=4)
 time <- rep(rep(c("T1", "T2"), each=2),2)
@@ -125,7 +195,7 @@ bamFiles <- c("Ct_time1_rep1.bam", "Ct_time1_rep2.bam",
          "Mut_time2_rep1.bam","Mut_time2_rep2.bam")
 targets_2 <- data.frame(bam=bamFiles,
                         condition=paste(bkg, time, sep="."),
-                        row.names=sub("\\.bam$", "", bamFiles))
+                        row.names=sub("\\.bam\\\$", "", bamFiles))
 @ 
 
 Using the \texttt{targets} data.frame, BAM files are loaded and stored as read alignments in an object of type list.
@@ -353,7 +423,7 @@ Inspection of coverage plots is a good practice for the interpretation of analyt
 <<targetsPlot, eval=TRUE>>=
 bamFiles <- c("CT.bam","KD.bam")
 targetsPlot <- data.frame(bam=bamFiles, 
-                        sample=sub("\\.bam$", "", bamFiles), 
+                        sample=sub("\\.bam\\\$", "", bamFiles), 
                         color=c("blue", "black"), 
                         stringsAsFactors=FALSE)
 @

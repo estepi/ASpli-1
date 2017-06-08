@@ -1,3 +1,4 @@
+# Deprecated
 .binsDU_DEXSeq <-
   function(df,targets, group)
   {
@@ -30,6 +31,8 @@
     return(splicing_full)
   }
 ##################################################################
+
+# Deprecated
 .junctionsDU_SUM_DEXSeq <- function(df, 
                            targets, 
                            genesde, group)
@@ -179,6 +182,8 @@
   return(et_merge)
 }                        
 ##################################################
+
+# Deprecated
 .genesDE_DESeq <-
   function(df, targets, pair)
   { 
