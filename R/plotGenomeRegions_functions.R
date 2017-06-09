@@ -1,52 +1,20 @@
-# TODO: Add comment
-# 
-# Author: ulab103
-###############################################################################
+.getBamMatrix <- function( conditionMatrix, mergedFiles, gene ) { 
 
-library(Gviz)
-
-library(Rsamtools)
-
-library(ASpli)
-
-genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
-        package="ASpli") )
-
-features <- binGenome( genomeTxDb ) 
-
-targets <- data.frame(
-    row.names = c( "A_C_0", "A_C_1", "A_C_2",
-                   "B_C_0", "B_C_1", "B_C_2",
-                   "A_D_0", "A_D_1", "A_D_2",
-                   "B_D_0", "B_D_1", "B_D_2"), 
-    bam = system.file( 'extdata',c( "A_C_0.bam", "A_C_1.bam", "A_C_2.bam",
-                  "B_C_0.bam", "B_C_1.bam", "B_C_2.bam",
-                  "A_D_0.bam", "A_D_1.bam", "A_C_2.bam",
-                  "B_D_0.bam", "B_D_1.bam", "B_C_2.bam"), package = "ASpli"),
-    f1 = c( 'A','A','A','B','B','B','A','A','A','B','B','B'),
-    f2 = c( 'C','C','C','C','C','C','D','D','D','D','D','D')
-    )
-
-bams <- loadBAM( targets )
-
-counts <- readCounts( features, bams, targets, 1, 100, 50000 )
-
-du <- DUreport( counts, targets, contrast = c(1,-1,-1,1) )
-
-setwd( '/home/ulab103/git/ASpli-1/inst/extdata' )
-f1 <- system.file( 'extdata', 'A_C_0.bam' , package="ASpli" )
-f2 <- system.file( 'extdata', 'A_C_1.bam' , package="ASpli" )
-f3 <- system.file( 'extdata', 'A_C_2.bam' , package="ASpli" )
-
-mergeBam( files =  c(f1,f2), destination = "A_C.bam" )
-
+  apply( conditionMatrix, c(1,2), 
+      function( x ) {
+        a <- mergedFiles[ mergedFiles$genes == gene & mergedFiles$cond == x , 'bams' ]
+        if (any( is.na(a) ) ) { return(NA) }
+        return(a)
+      }
+  )
+} 
 
 .mergeBamsByCondition <- function ( targets , regions , tempFolder = './tmp' ) {
-
+  
   destBams <- expand.grid( cond = getConditions( targets ), genes = names( regions) )
   
   destBams$bams <- file.path( tempFolder, paste0( 'cond.',destBams[,1], '.gene.',destBams[,2],".bam") ) 
-
+  
   file.exists( tempFolder) || dir.create( tempFolder , recursive = TRUE) 
   
   mapply( function( cond, gene, bam ) { 
@@ -59,44 +27,6 @@ mergeBam( files =  c(f1,f2), destination = "A_C.bam" )
   return( destBams )
 }
 
-seletectedDU <- ASpli:::.filterDU( du, what = c( 'bins'), 0.15, .58 )
-
-a <- strsplit( as.character( countsg( counts )[ unique( binsDU( seletectedDU )[,'locus'] ), c('gene_coordinates')] ),
-    '[-:]')
-
-b <- do.call( rbind , a)
-b <- data.frame(b, stringsAsFactors = FALSE)
-
-b[,2] <- as.integer( b[,2] )
-b[,3] <- as.integer( b[,3] )
-
-regions <- GRanges( b[,1], IRanges( b[,2] , b[,3]) , strand='+') 
-names( regions ) <- unique( binsDU( seletectedDU )[,'locus'] )   
-
-targets <- ASpli:::.condenseTargetsConditions( targets )
-
-mergedFiles <- .mergeBamsByCondition( targets, regions ) 
-
-
-
-conditionMatrix <- matrix( c('A_C','A_D','B_C','B_D'), nrow = 2 )
-
-conditionMatrix <- matrix( c('A_C','A_D','B_C', NA ), nrow = 2 )
-
-getBamMatrix <- function( conditionMatrix, mergedFiles, gene ) { 
-  apply( conditionMatrix, c(1,2), 
-    function( x ) {
-      a <- mergedFiles[ mergedFiles$genes == gene & mergedFiles$cond == x , 'bams' ]
-      if (any( is.na(a) ) ) { return(NA) }
-      return(a)
-    }
-  )
-} 
-
-bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
-
-.plotGenomicRegion( c( 'GENE08' ), genomeTxDb , counts,  
-    targets,xIsBin=FALSE, sashimi = TRUE, highLightBin = FALSE )
 
 .definePlottingRegions <- function( counts, x, xIsBin ) {
   
@@ -142,9 +72,16 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
   # Check if auto layout is required
   if ( is.character( layout ) && tolower( layout ) == 'auto' ) {
     
-    .colorsFromConditionMatrix <- function( conditionMatrix ) {
-      colors <- colors()[1:(length(conditionMatrix)) + 15]
-      matrix( colors, ncol = ncol(conditionMatrix) )
+    .colorsFromConditionMatrix <- function( conditionMatrix , colors ) {
+      if ( length( colors ) == 1 && tolower( colors ) == 'auto' ) {
+        colors <- colors()[1:(length(conditionMatrix)) + 15]
+        matrix( colors, ncol = ncol(conditionMatrix) )
+      } else {
+        matrix( colors, 
+            ncol = ncol( conditionMatrix ),
+            nrow = nrow( conditionMatrix ),
+            byrow = TRUE)
+      }
     }
     
     expFactors <- colnames( targets )[ 
@@ -159,12 +96,7 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
       conditionMatrix <- matrix( getConditions(targets), 
           ncol = length( getConditions(targets) ) )
       plotTitles <- conditionMatrix
-      if ( length( color ) == length( getConditions(targets) ) || 
-           length( color ) == 1 ) {
-        colors <- matrix( colors, ncol = length( getConditions(targets) ) )
-      } else {
-        colors <- .colorsFromConditionMatrix(conditionMatrix)
-      }
+      colors <- .colorsFromConditionMatrix( conditionMatrix, colors )
     } 
     # ------------------------------------------------------------------------ #
     
@@ -183,13 +115,13 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
             nrow = length( unique( targets[expFactors][,1]) ),
             byrow = TRUE )
         plotTitles <- conditionMatrix
-        colors <- .colorsFromConditionMatrix(conditionMatrix)
+        colors <- .colorsFromConditionMatrix(conditionMatrix, colors)
         
       } else {
         conditionMatrix <- matrix( getConditions( targets ), 
             ncol = length( getConditions(targets) ) )
         plotTitles <- conditionMatrix     
-        colors <- .colorsFromConditionMatrix(conditionMatrix)
+        colors <- .colorsFromConditionMatrix(conditionMatrix, colors)
       }
     } 
     # ------------------------------------------------------------------------ #
@@ -204,7 +136,7 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
       stop(simpleError("Layout must be a matrix or 'auto'" ))
     }
     if ( is.null( colors ) ) {
-      colors <- .colorsFromConditionMatrix( layout )
+      colors <- .colorsFromConditionMatrix( layout, colors )
     }
     if ( ncol( plotTitles ) != ncol(layout) || 
         nrow( plotTitles ) != nrow(layout) ||
@@ -223,18 +155,20 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
   return( result )
 }
 
-.plotGenomicRegion <- function( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
+.plotGenomeRegions <- function( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
     layout = 'auto', colors = 'auto', plotTitles = 'auto', sashimi = FALSE, 
     zoomOnBins= FALSE, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
-    outfileType = 'png', mainFontSize = 24 ) {
+    outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
+    annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black' ) {
   
-  targets <- ASpli:::.condenseTargetsConditions( targets )
+  targets <- .condenseTargetsConditions( targets )
   
   # -------------------------------------------------------------------------- #
   # Autoarrange 
   layoutPars <- .arrangeLayout( targets, layout, colors, plotTitles )
   conditionMatrix <- layoutPars$conditionMatrix
   colors <- layoutPars$colors
+  print( colors )
   plotTitles <- layoutPars$plotTitles
   # -------------------------------------------------------------------------- #
 
@@ -263,18 +197,19 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
     currentGene <- if ( xIsBin ) countsb( counts )[ xi, c('locus') ] else xi
     highLightBin <- highLightBin & xIsBin
     zoomOnBins <- zoomOnBins & xIsBin
-    bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , currentGene )
+    bamfiles <- .getBamMatrix( conditionMatrix , mergedFiles , currentGene )
     genLims <- c( start( regions[currentGene] ), end( regions[currentGene] ) )
     binLims <- if ( xIsBin ) as.integer( countsb( counts )[ 
                   xi, c( 'start', 'end' ) ] ) else NULL 
     
     if ( ! is.null( outfolder ) ) {
-      outfile <- file.path( outfolder, paste0( xi,'.gr.', outfileType ) )
+      outfile <- file.path( outfolder, 
+          .makeValidFileName( paste0( xi,'.gr.', outfileType ) ) )
     } else { 
       outfile <- NULL
     }
     
-    .plotGeneBrowser( 
+    .makeGenomeRegionPlot( 
         main = xi, 
         genLims = genLims ,
         binLims = binLims ,
@@ -288,15 +223,17 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
         zoomOnBins = zoomOnBins,
         outfileType = outfileType,
         deviceOpt = deviceOpt,
-        highLightBin = highLightBin
+        highLightBin = highLightBin,
+        annotationHeight = annotationHeight,
+        annotationCol = annotationCol,
+        annotationFill = annotationFill,
+        annotationColTitle = annotationColTitle
     )
-    
-    
   }
   # -------------------------------------------------------------------------- #
 }
 
-.plotGeneBrowser <- function ( 
+.makeGenomeRegionPlot <- function ( 
     main , 
     genLims , 
     binLims , 
@@ -313,7 +250,11 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
     individualHeight = 800,
     highLightBin = TRUE,
     outfileType = 'png',
-    deviceOpt = NULL ) {
+    deviceOpt = NULL,
+    annotationHeight = 0.2,
+    annotationCol = 'black',
+    annotationFill = 'gray',
+    annotationColTitle = 'black') {
   
   # -------------------------------------------------------------------------- #
   # Extrae la cantidad de plots horizontales y verticales
@@ -327,10 +268,10 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
     if ( genLims[2] - genLims[1] - ( binLims[2] - binLims[1] ) > 2000 ) {
       genLims[1] <- binLims[1] - as.integer( abs(binLims[2]-binLims[1])*0.1 ) 
       genLims[2] <- binLims[2] + as.integer( abs(binLims[2]-binLims[1])*0.1 )
-    } else {
-      genLims[1] <- genLims[1]- as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-      genLims[2] <- genLims[2]+ as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-    }
+    } 
+  } else {
+    genLims[1] <- genLims[1]- as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+    genLims[2] <- genLims[2]+ as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
   }
   # -------------------------------------------------------------------------- #
 
@@ -388,7 +329,7 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
             rangeFile = bamFiles [ v, h ],
             name      = plotNames[ v, h ],
             colors    = colors   [ v, h ],
-            size      = 8000 / sum( ! is.na( bamFiles[,h]))) 
+            size      = 10000 * ( 1 - annotationHeight )  / sum( ! is.na( bamFiles[,h]))) 
         alntracks[[ h ]][[ v ]] <- cTrack 
       } 
     }
@@ -403,11 +344,11 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
       options(ucscChromosomeNames=FALSE),
       name = "", 
       transcriptAnnotation = "symbol",
-      size = 2000,  
-      fill = "grey",
-      col = 'black',
+      size = annotationHeight * 10000,  
+      fill = annotationFill ,
+      col = annotationCol,
       shape = "arrow",
-      col.title = 'black'
+      col.title = annotationColTitle
   )
   # -------------------------------------------------------------------------- #
   
@@ -503,30 +444,10 @@ bamfiles <- getBamMatrix( conditionMatrix , mergedFiles , 'GENE09' )
     popViewport(1)
   }
   
-  
-  
   # -------------------------------------------------------------------------- #
   # Close graphic device 
   if ( outputIsAValidFile ) {
     output <- capture.output( dev.off() )
   } 
   # -------------------------------------------------------------------------- #
-  
 }
-
-
-.plotGeneBrowser( 
-    main = 'SampleBin', 
-    genLims = c( start( regions['GENE09'] ) , end( regions['GENE09'] ) ) ,
-    binLims = as.integer( binsDU( seletectedDU )[ 'GENE09:E004', c('start', 'end') ] ),
-    chromosome = 'reference',
-    outfile = 'SampleBin.pdf',
-    genome = genomeTxDb,
-    bamFiles = bamfiles,
-    plotNames = conditionMatrix,
-    colors = matrix( rep('gray',4), ncol = 2),
-    sashimi = FALSE,
-    zoomOnBins = TRUE,
-    outfileType = 'pdf'
-)
-

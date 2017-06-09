@@ -7,7 +7,7 @@
   for ( cBin in bin) {
     print(cBin)
     filename <- if ( ! is.null( outfolder )) {
-          file.path( outfolder , .makeValidFileName( paste0(cBin,'.',outfileType ) ) )
+          file.path( outfolder , .makeValidFileName( paste0(cBin,'.pr.',outfileType ) ) )
         } else {
           outfolder
         }
@@ -185,7 +185,7 @@
 
 # ---------------------------------------------------------------------------- #
 # Create the labels for factor corresponding to the x axis of plots. 
-makeXticksLabels <- function( justOneFactor, gridPanels, factorsAndValues, 
+.makeXticksLabels <- function( justOneFactor, gridPanels, factorsAndValues, 
     mainFactorIndex, data ) {
   
   if ( ! justOneFactor ) {
@@ -212,7 +212,7 @@ makeXticksLabels <- function( justOneFactor, gridPanels, factorsAndValues,
   mainFactorIndex <- length( factorsAndValues )
 
   # Get the labels of ticks in the x axis.
-  xTicksLabels <- makeXticksLabels( justOneFactor , gridPanels, 
+  xTicksLabels <- .makeXticksLabels( justOneFactor , gridPanels, 
       factorsAndValues, mainFactorIndex, data )
   
   # Get the y axis minimum and maximum values. Used to scale the plots correctly.

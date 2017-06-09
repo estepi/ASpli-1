@@ -849,3 +849,78 @@ setMethod(
     } 
 )
 # ---------------------------------------------------------------------------- # 
+
+# ---------------------------------------------------------------------------- #
+# plotGenomicRegions
+setGeneric( 
+    name = "plotGenomicRegions", 
+    def = function( 
+        counts, 
+        x, 
+        genomeTxDb, 
+        targets, 
+        xIsBin = TRUE, 
+        layout = 'auto', 
+        colors = 'auto', 
+        plotTitles = 'auto', 
+        sashimi = FALSE, 
+        zoomOnBins= FALSE, 
+        deviceOpt = NULL, 
+        highLightBin = TRUE, 
+        outfolder = NULL, 
+        outfileType = 'png', 
+        mainFontSize = 24, 
+        annotationHeight = 0.2,
+        annotationCol = 'black', 
+        annotationFill = 'gray', 
+        annotationColTitle = 'black') standardGeneric( "plotGenomicRegions" ) )
+
+setMethod(
+    f = "plotGenomicRegions",
+    signature = "ASpliCounts",
+    definition = function ( 
+        counts, 
+        x, 
+        genomeTxDb, 
+        targets, 
+        xIsBin = TRUE, 
+        layout = 'auto', 
+        colors = 'auto', 
+        plotTitles = 'auto', 
+        sashimi = FALSE, 
+        zoomOnBins= FALSE, 
+        deviceOpt = NULL, 
+        highLightBin = TRUE, 
+        outfolder = NULL, 
+        outfileType = 'png', 
+        mainFontSize = 24, 
+        annotationHeight = 0.2, 
+        annotationCol = 'black', 
+        annotationFill = 'gray', 
+        annotationColTitle = 'black' ) {
+      
+          .plotGenomicRegion(
+              x, 
+              genomeTxDb, 
+              counts, 
+              targets, 
+              xIsBin, 
+              layout, 
+              colors, 
+              plotTitles, 
+              sashimi, 
+              zoomOnBins, 
+              deviceOpt, 
+              highLightBin, 
+              outfolder, 
+              outfileType, 
+              mainFontSize, 
+              annotationHeight, 
+              annotationCol, 
+              annotationFill, 
+              annotationColTitle )
+    }
+)
+        
+# ---------------------------------------------------------------------------- #
+
