@@ -48,7 +48,8 @@ exportMethods(
     "junctionDUReport",
     "containsGenesAndBins",
     "containsJunctions",
-    "plotBins"
+    "plotBins",
+    "plotGenomicRegions"
     
 )
 exportClasses(

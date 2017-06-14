@@ -1,41 +1,69 @@
-.getBamMatrix <- function( conditionMatrix, mergedFiles, gene ) { 
+# TODO agregar verbosity
 
+.getBamMatrix <- function( conditionMatrix, mergedFiles ) { 
+  
   apply( conditionMatrix, c(1,2), 
       function( x ) {
-        a <- mergedFiles[ mergedFiles$genes == gene & mergedFiles$cond == x , 'bams' ]
+        a <- unlist( mergedFiles[ mergedFiles$cond == x , 'bams' ] )
         if (any( is.na(a) ) ) { return(NA) }
         return(a)
       }
   )
 } 
 
-.mergeBamsByCondition <- function ( targets , regions , tempFolder = './tmp' ) {
+.mergeBamsByCondition <- function ( targets , regions , tempFolder = './tmp', 
+    keepOld = FALSE, verbose) {
   
-  destBams <- expand.grid( cond = getConditions( targets ), genes = names( regions) )
+  targets <- cbind( targets[ rep(1:nrow(targets), length( regions )),], 
+      data.frame( region = rep( c(1:length(regions)), each = nrow(targets)) ) )
+  targets$filt <- file.path( tempFolder, paste0( 'sample.', 1:nrow(targets) ,'.bam') )
   
-  destBams$bams <- file.path( tempFolder, paste0( 'cond.',destBams[,1], '.gene.',destBams[,2],".bam") ) 
+  destBams <- data.frame( cond = getConditions(targets) )
+  destBams$bams <- file.path( tempFolder, 
+      paste0( 'cond.', getConditions(targets),'.bam') )
   
-  file.exists( tempFolder) || dir.create( tempFolder , recursive = TRUE) 
-  
-  mapply( function( cond, gene, bam ) { 
-        sourceBams <- as.character( targets$bam[ targets$condition == cond ] )
-        mergeBam( files = sourceBams , destination = bam , region = regions[ gene ], overwrite = TRUE )
-        indexBam( bam )
-      } ,
-      destBams$cond, destBams$genes, destBams$bams
-  )
+  file.exists( tempFolder) || dir.create( tempFolder , recursive = TRUE)
+  if ( ! keepOld ) {
+    if (verbose) message("Extracting and merging reads from bam files")
+    for ( i in 1:nrow( targets ) ) {
+      
+      indexBam( targets$bam[i] )
+      
+      filterBam(
+          file = targets$bam[i],
+          destination = targets$filt[i],
+          param = ScanBamParam( which = regions[targets$region[i]] ),
+          indexDestination = TRUE )
+      if (verbose) message(paste("Extraction completed:", as.character(i), "/", as.character(nrow( targets )) ) )
+    }
+    
+    lapply( getConditions(targets), function( cond ) {
+          sourceBams <- as.character( targets$filt[ targets$condition == cond ] )
+          
+          fn <- mergeBam( 
+              files = sourceBams , 
+              destination = file.path( tempFolder, paste0( 'cond.', cond,'.bam') ) , 
+              indexDestination = TRUE, overwrite = TRUE )
+        } )
+    if (verbose) message("Merging completed" )
+    
+  } else {
+    if (verbose) message("Re-using previously extracted and merged reads")
+  }
   return( destBams )
 }
 
 
-.definePlottingRegions <- function( counts, x, xIsBin ) {
+.definePlottingRegions <- function( counts, x, xIsBin, verbose ) {
   
   binCounts <-  countsb( counts )
   geneCounts <- countsg( counts )
-
+  
   if ( xIsBin ) {
+    if (verbose) message( "Extracting gene regions of selected bins" )
     selectedGenes <- unique( countsb( counts )[ rownames(  countsb( counts ) ) %in% x ,'locus'] )
   } else {
+    if (verbose) message( "Extracting gene regions of selected genes" )
     selectedGenes <- x
   }
   if ( length( genes ) > 0 ) {
@@ -57,32 +85,31 @@
     names( regions ) <- selectedGenes   
     
     return( regions )
-  
+    
   } else {
-    
+    if (verbose) message( "No valid gene regions recovered" )
     return( GRanges( NULL, IRanges( NULL, NULL ) ) )
-    
   }
-  
-  
 }
 
-.arrangeLayout <- function( targets, layout, colors, plotTitles ) {
+.arrangeLayout <- function( targets, layout, colors, plotTitles, verbose ) {
+  
+  .colorsFromConditionMatrix <- function( conditionMatrix , colors, verbose ) {
+    if ( length( colors ) == 1 && tolower( colors ) == 'auto' ) {
+      if (verbose) message( "Automatic selection of colors" )
+      colors <- colors()[1:(length(conditionMatrix)) + 15]
+      matrix( colors, ncol = ncol(conditionMatrix) )
+    } else {
+      if (verbose) message( "Using colors given by user" )        
+      matrix( colors, 
+          ncol = ncol( conditionMatrix ),
+          nrow = nrow( conditionMatrix ),
+          byrow = TRUE)
+    }
+  }
   
   # Check if auto layout is required
   if ( is.character( layout ) && tolower( layout ) == 'auto' ) {
-    
-    .colorsFromConditionMatrix <- function( conditionMatrix , colors ) {
-      if ( length( colors ) == 1 && tolower( colors ) == 'auto' ) {
-        colors <- colors()[1:(length(conditionMatrix)) + 15]
-        matrix( colors, ncol = ncol(conditionMatrix) )
-      } else {
-        matrix( colors, 
-            ncol = ncol( conditionMatrix ),
-            nrow = nrow( conditionMatrix ),
-            byrow = TRUE)
-      }
-    }
     
     expFactors <- colnames( targets )[ 
         ! colnames( targets ) %in% c( 'bam', 'condition' ) ]
@@ -92,11 +119,12 @@
     # ------------------------------------------------------------------------ #
     # Case 1: just one experimental factor
     # result matrix is 1 x n
+    if ( verbose ) message( "Auto arrange for one experimental factor: 1 x n matrix")
     if ( nExpFactors == 1 ) {
       conditionMatrix <- matrix( getConditions(targets), 
           ncol = length( getConditions(targets) ) )
       plotTitles <- conditionMatrix
-      colors <- .colorsFromConditionMatrix( conditionMatrix, colors )
+      colors <- .colorsFromConditionMatrix( conditionMatrix, colors, verbose )
     } 
     # ------------------------------------------------------------------------ #
     
@@ -106,22 +134,23 @@
     # first factor and m * ... are the number of combination of remaining 
     # factors.
     if ( nExpFactors > 1 ) {
-
       nComb <- prod( apply( targets[, expFactors], 2 , 
               function( x ) length( unique( x ) ) ) )
       
       if ( length( getConditions( targets ) == nComb ) ) {
+        if ( verbose ) message( "Auto arrange for more than one experimental factor: m x n matrix")
         conditionMatrix <- matrix( getConditions( targets ), 
             nrow = length( unique( targets[expFactors][,1]) ),
             byrow = TRUE )
         plotTitles <- conditionMatrix
-        colors <- .colorsFromConditionMatrix(conditionMatrix, colors)
+        colors <- .colorsFromConditionMatrix(conditionMatrix, colors, verbose)
         
       } else {
+        if ( verbose ) message( "Auto arrange for more than one experimental factor: 1 x n matrix")
         conditionMatrix <- matrix( getConditions( targets ), 
             ncol = length( getConditions(targets) ) )
         plotTitles <- conditionMatrix     
-        colors <- .colorsFromConditionMatrix(conditionMatrix, colors)
+        colors <- .colorsFromConditionMatrix(conditionMatrix, colors, verbose)
       }
     } 
     # ------------------------------------------------------------------------ #
@@ -132,19 +161,26 @@
     # Case 3: No auto arrange required. 
     # Matching matrix dimensions of layout, colors and plotTitles matrixes is 
     # checked.
+    
     if ( ! is.matrix( layout ) ) { 
       stop(simpleError("Layout must be a matrix or 'auto'" ))
     }
-    if ( is.null( colors ) ) {
-      colors <- .colorsFromConditionMatrix( layout, colors )
+    if ( ! is.matrix( colors ) ) {
+      colors <- .colorsFromConditionMatrix( layout, colors, verbose )
     }
-    if ( ncol( plotTitles ) != ncol(layout) || 
-        nrow( plotTitles ) != nrow(layout) ||
-        ncol( colors ) != ncol(layout) || 
-        nrow( colors ) != nrow(layout) ) {
+    if ( is.character( plotTitles ) && plotTitles == 'auto' ) {
+      plotTitles <- layout
+    }
+    print(plotTitles)
+    print(colors)
+    if ( ( ncol( plotTitles ) != ncol(layout) ) | 
+         ( nrow( plotTitles ) != nrow(layout) ) |
+         ( ncol( colors )     != ncol(layout) ) | 
+         ( nrow( colors )     != nrow(layout) ) ) {
       stop( simpleError(
               "The number of columns and rows of colors and plotTitles must match to layout" ))
     }
+    if ( verbose ) message( "Using given layout matrix to arrange plots")
     conditionMatrix <- layout
     # ------------------------------------------------------------------------ #
   }
@@ -155,28 +191,30 @@
   return( result )
 }
 
-.plotGenomeRegions <- function( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
+.plotGenomicRegions <- function( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
     layout = 'auto', colors = 'auto', plotTitles = 'auto', sashimi = FALSE, 
-    zoomOnBins= FALSE, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
+    zoomOnBins = NULL, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
     outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
-    annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black' ) {
+    annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black',
+    preMergedBAMs = NULL, useTransparency = TRUE, tempFolder = 'tmp', avoidReMergeBams, verbose = TRUE ) {
   
   targets <- .condenseTargetsConditions( targets )
   
   # -------------------------------------------------------------------------- #
   # Autoarrange 
-  layoutPars <- .arrangeLayout( targets, layout, colors, plotTitles )
+  layoutPars <- .arrangeLayout( targets, layout, colors, plotTitles, verbose )
   conditionMatrix <- layoutPars$conditionMatrix
   colors <- layoutPars$colors
-  print( colors )
   plotTitles <- layoutPars$plotTitles
   # -------------------------------------------------------------------------- #
-
+  
   # -------------------------------------------------------------------------- #
   # Keep existing genes and bins in the data set
   if ( xIsBin ) {
+    if (verbose) message( "Selecting Bins" )
     x <- x[ x %in% rownames( countsb( counts ) ) ]
   } else {
+    if (verbose) message( "Selecting Genes" )
     x <- x[ x %in% rownames( countsg( counts ) ) ]
   }
   if ( length( x ) == 0 ) {
@@ -186,50 +224,65 @@
   
   # -------------------------------------------------------------------------- #
   # Collect and merge bam files
-  regions <- .definePlottingRegions( counts, x, xIsBin)
-  mergedFiles <- .mergeBamsByCondition( targets, regions )
+  regions <- .definePlottingRegions( counts, x, xIsBin, verbose )
+  if ( is.null( preMergedBAMs) ) {
+    if (verbose) message("Using selected regions to extract and merge reads")
+    mergedFiles <- .mergeBamsByCondition( targets, regions, 
+        keepOld = avoidReMergeBams, tempFolder, verbose )
+  } else {
+    if (verbose) message("Using pre merged bams files")
+    mergedFiles <- data.frame( 
+        cond = rownames( preMergedBAMs ),
+        bams = as.character( preMergedBAMs[,1] ), stringsAsFactors = FALSE)
+  }
+  bamfiles <- .getBamMatrix( conditionMatrix , mergedFiles  )
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
   # Plot
+  plotCounter = 0
   for ( xi in x ) {
-
+    plotCounter <- plotCounter +1 
     currentGene <- if ( xIsBin ) countsb( counts )[ xi, c('locus') ] else xi
     highLightBin <- highLightBin & xIsBin
-    zoomOnBins <- zoomOnBins & xIsBin
-    bamfiles <- .getBamMatrix( conditionMatrix , mergedFiles , currentGene )
+    zoomOnBins <- if ( is.null( zoomOnBins) | ! xIsBin ) NULL 
+    
     genLims <- c( start( regions[currentGene] ), end( regions[currentGene] ) )
     binLims <- if ( xIsBin ) as.integer( countsb( counts )[ 
                   xi, c( 'start', 'end' ) ] ) else NULL 
     
     if ( ! is.null( outfolder ) ) {
+      dir.exists( outfolder ) || dir.create( outfolder )
       outfile <- file.path( outfolder, 
           .makeValidFileName( paste0( xi,'.gr.', outfileType ) ) )
     } else { 
       outfile <- NULL
     }
+    if ( verbose ) message( paste( "Plotting", xi, "(",
+              as.character(plotCounter),"/", as.character(length(x)) ,")" ) )
     
     .makeGenomeRegionPlot( 
-        main = xi, 
-        genLims = genLims ,
-        binLims = binLims ,
-        chromosome = seqlevels(regions[currentGene]),
-        outfile = outfile,
-        genome = genomeTxDb,
-        bamFiles = bamfiles,
-        plotNames = conditionMatrix,
-        colors = colors,
-        sashimi = sashimi,
-        zoomOnBins = zoomOnBins,
-        outfileType = outfileType,
-        deviceOpt = deviceOpt,
-        highLightBin = highLightBin,
-        annotationHeight = annotationHeight,
-        annotationCol = annotationCol,
-        annotationFill = annotationFill,
-        annotationColTitle = annotationColTitle
-    )
-  }
+      main = xi, 
+      genLims = genLims ,
+      binLims = binLims ,
+      chromosome = as.character( seqnames( regions[currentGene] ) ),
+      outfile = outfile,
+      genome = genomeTxDb,
+      bamFiles = bamfiles,
+      plotNames = conditionMatrix,
+      colors = colors,
+      sashimi = sashimi,
+      zoomOnBins = zoomOnBins,
+      outfileType = outfileType,
+      deviceOpt = deviceOpt,
+      highLightBin = highLightBin,
+      annotationHeight = annotationHeight,
+      annotationCol = annotationCol,
+      annotationFill = annotationFill,
+      annotationColTitle = annotationColTitle,
+      useTransparency = useTransparency )
+      
+   }
   # -------------------------------------------------------------------------- #
 }
 
@@ -254,7 +307,8 @@
     annotationHeight = 0.2,
     annotationCol = 'black',
     annotationFill = 'gray',
-    annotationColTitle = 'black') {
+    annotationColTitle = 'black',
+    useTransparency = FALSE ) {
   
   # -------------------------------------------------------------------------- #
   # Extrae la cantidad de plots horizontales y verticales
@@ -264,17 +318,28 @@
   
   # -------------------------------------------------------------------------- #
   # Zoom on Bins
-  if (zoomOnBins) {
-    if ( genLims[2] - genLims[1] - ( binLims[2] - binLims[1] ) > 2000 ) {
-      genLims[1] <- binLims[1] - as.integer( abs(binLims[2]-binLims[1])*0.1 ) 
-      genLims[2] <- binLims[2] + as.integer( abs(binLims[2]-binLims[1])*0.1 )
-    } 
-  } else {
-    genLims[1] <- genLims[1]- as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-    genLims[2] <- genLims[2]+ as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+  if ( ! is.null( zoomOnBins )) {
+    minZoomFactor <- abs( binLims[2] - binLims[1] ) / abs(genLims[2]-genLims[1])
+    zoomOnBins <- min( max( zoomOnBins, minZoomFactor ) , 1 )
+    deltaG <- abs(genLims[2]-genLims[1]) / zoomOnBins
+    binMean <- (binLims[2] + binLims[1])/2
+    genLims[1] <- max( binMean - deltaG /2, genLims[1] )
+    genLims[2] <- min( binMean + deltaG /2, genLims[2] )
+    genLims[1] <- genLims[1] - as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+    genLims[2] <- genLims[2] + as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+    
   }
+#  if (zoomOnBins) {
+#    if ( genLims[2] - genLims[1] - ( binLims[2] - binLims[1] ) > 2000 ) {
+#      genLims[1] <- binLims[1] - as.integer( abs(binLims[2]-binLims[1])*0.1 ) 
+#      genLims[2] <- binLims[2] + as.integer( abs(binLims[2]-binLims[1])*0.1 )
+#    } 
+#  } else {
+#    genLims[1] <- genLims[1]- as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+#    genLims[2] <- genLims[2]+ as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
+#  }
   # -------------------------------------------------------------------------- #
-
+  
   # -------------------------------------------------------------------------- #
   # Functions to define tracks
   alnTrack <- function( rangeFile, name, colors, size  ) {
@@ -285,7 +350,7 @@
         col= colors,
         fill.coverage = colors,
         col.coverage = colors,
-        background.title = 'transparent',
+        background.title = if (useTransparency ) 'transparent' else { 'white' },
         type = c( 'coverage', 'sashimi' )[c( TRUE, sashimi ) ],
         sashimiHeight = 0.5,
         coverageHeight = 0.5,      
@@ -299,22 +364,25 @@
         col.title = 'black',
         size = size,
         margin= 20
-      )
+    )
   }
   
   binHighLight <- function ( tracks ) {
     tracks <- tracks[ ! is.na (tracks )]
+    colRGB <- if( useTransparency ) rgb(0.5,0.5,0.5, 0.3) else rgb(0.5,0.5,0.5) 
+    fillRGB <- if( useTransparency ) rgb( 0.5,0.5,0.5,0.25) else rgb( 0.8,0.8,0.8 )   
+    inBackGround <- ! useTransparency
     HighlightTrack(
         trackList = tracks, 
         start = binLims[1], 
         end = binLims[2],
         chromosome = chromosome,
 #        col="transparent",
-        col=rgb(0.5,0.5,0.5,0.3),
-        fill=rgb(0.5,0.5,0.5,0.25),
+        col=colRGB,
+        fill=fillRGB,
         lwd=1,
         frame = TRUE,
-        inBackground=FALSE
+        inBackground=inBackGround
     )
   }
   # -------------------------------------------------------------------------- #
@@ -352,16 +420,16 @@
   )
   # -------------------------------------------------------------------------- #
   
-
+  
   
   if ( highLightBin ) {
     columnTracks <- lapply( alntracks, function (x) {
-        binHighLight ( x )
-      } )
+          binHighLight ( x )
+        } )
   } else {
     columnTracks <- alntracks
   }
-
+  
   
   # -------------------------------------------------------------------------- #
   # creates the graphic device
@@ -420,7 +488,7 @@
               nrow = 2, 
               ncol = hplots , 
               heights = unit( c ( 1, 5 ) , "null") ) ) )
-
+  
   grid.text(main, gp=gpar( fontsize = mainFontSize ) , 
       vp = viewport(layout.pos.row = 1, layout.pos.col = 1:hplots) )
   
@@ -435,15 +503,14 @@
         minCoverageHeight = 0, 
         min.width         = 2, 
         min.distance      = 5,
-        background.title  = 'transparent',
+        background.title  = 'white',
         margin            = 10,
         innerMargin       = 5,
         add               = TRUE
-    )
+    ) 
     first <- FALSE
     popViewport(1)
   }
-  
   # -------------------------------------------------------------------------- #
   # Close graphic device 
   if ( outputIsAValidFile ) {

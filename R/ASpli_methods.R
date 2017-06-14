@@ -495,7 +495,8 @@ setGeneric (
         ignoreExternal = TRUE,
         ignoreIo = TRUE, 
         ignoreI = FALSE,
-        filterWithContrasted = FALSE
+        filterWithContrasted = FALSE,
+        verbose = FALSE
       ) standardGeneric("DUreport") )
 
 #setGeneric (
@@ -518,11 +519,12 @@ setMethod(
       ignoreExternal = TRUE,
       ignoreIo = TRUE, 
       ignoreI = FALSE,
-      filterWithContrasted = FALSE  
+      filterWithContrasted = FALSE,
+      verbose = FALSE
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
           offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
-        ignoreExternal, ignoreIo, ignoreI, filterWithContrasted )
+        ignoreExternal, ignoreIo, ignoreI, filterWithContrasted, verbose )
   }
 )
 
@@ -607,7 +609,7 @@ setMethod(
       
       if( offset ){
         warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
-        mOffset <- getOffsetMatrix( 
+        mOffset <- .getOffsetMatrix( 
             df, 
             dfGen,
             targets,
@@ -873,7 +875,12 @@ setGeneric(
         annotationHeight = 0.2,
         annotationCol = 'black', 
         annotationFill = 'gray', 
-        annotationColTitle = 'black') standardGeneric( "plotGenomicRegions" ) )
+        annotationColTitle = 'black',
+        preMergedBAMs = NULL,
+        useTransparency = FALSE,
+        tempFolder = 'tmp',
+        avoidReMergeBams = FALSE,
+        verbose = FALSE) standardGeneric( "plotGenomicRegions" ) )
 
 setMethod(
     f = "plotGenomicRegions",
@@ -897,9 +904,14 @@ setMethod(
         annotationHeight = 0.2, 
         annotationCol = 'black', 
         annotationFill = 'gray', 
-        annotationColTitle = 'black' ) {
+        annotationColTitle = 'black',
+        preMergedBAMs = NULL,
+        useTransparency = TRUE,
+        tempFolder = 'tmp',
+        avoidReMergeBams = FALSE,
+        verbose = FALSE) {
       
-          .plotGenomicRegion(
+          .plotGenomicRegions(
               x, 
               genomeTxDb, 
               counts, 
@@ -913,12 +925,17 @@ setMethod(
               deviceOpt, 
               highLightBin, 
               outfolder, 
-              outfileType, 
+              outfileType,
               mainFontSize, 
               annotationHeight, 
               annotationCol, 
               annotationFill, 
-              annotationColTitle )
+              annotationColTitle,
+              preMergedBAMs,
+              useTransparency,
+              tempFolder,
+              avoidReMergeBams ,
+              verbose )
     }
 )
         
