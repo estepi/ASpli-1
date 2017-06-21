@@ -20,7 +20,6 @@
                     minRds = 0.05,
                     threshold = 5,
                     offset = FALSE, 
-                    offsetAggregateMode =  c( "geneMode", "binMode" )[2],
                     offsetUseFitGeneX = TRUE,
                     contrast = NULL, 
                     forceGLM = FALSE)
@@ -51,21 +50,12 @@
   }
   \item{threshold}{
     Junction with at least \code{threshold} counts are included into the 
-    differential usage test.
-  }
+    differential usage test. }
   \item{offset}{ Corrects junction counts using an offset matrix derived from 
     gene expression data. Default = FALSE}
-  \item{offsetAggregateMode}{ Choose the method to aggregate gene counts to 
-    create the offset matrix. When \code{offsetAggregateMode} is 'geneMode' and 
-    option \code{offsetUseFitGeneX} is TRUE, a generalized linear model is used 
-    to create the offset matrix. When \code{offsetAggregateMode} is 'geneMode' 
-    and option \code{offsetUseFitGeneX} is FALSE, the offset matrix is generated
-    by adding a prior count to the gene count matrix. When 
-    \code{offsetAggregateMode} is 'binMode' a matrix from obtained from the sum
-    of exonic bin counts, this only takes those junctions that passes filters
-    using minGenReads, threshold and minRds.
-    Options:=c( “geneMode”, “binMode” )[ 2 ] },
-  \item{offsetUseFitGeneX}{ Default= TRUE } 
+  \item{offsetUseFitGeneX}{ Fit a GLM using gene counts to build the offset 
+    matrix. This argument is used only when 'offset' argument is set to TRUE.
+    The default value is TRUE } 
   \item{contrast}{ Define the comparison between conditions to be tested.
     \code{contrast} should be a vector with length equal to the number of 
     experimental conditions defined by \code{targets}. The values of this vector
@@ -124,7 +114,7 @@
 }
 
 \seealso{
-  \code{\link{edgeR}}, \code{\link{junctionDUReport}}
+  \code{\link{edgeR}}, \code{\link{DUReport}}
   Accessors: \code{\link{junctionsDU}}
   Export: \code{\link{writeDU}}
 }

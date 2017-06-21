@@ -49,7 +49,10 @@ exportMethods(
     "containsGenesAndBins",
     "containsJunctions",
     "plotBins",
-    "plotGenomicRegions"
+    "plotGenomicRegions",
+    "subset",
+    "mergeBinDUAS",
+    "filterDU"
     
 )
 exportClasses(

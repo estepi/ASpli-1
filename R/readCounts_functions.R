@@ -109,8 +109,6 @@
   overGeneDF$subjectHits <- names(genes)[as.numeric(overGeneDF$subjectHits)]
   table <- table(overGeneDF$queryHits)
   
-  message( "Dentro de ovBinJunction - Primer Aggregate")
-  
   # BUG FIX: aggregate fails with 0-rows dfCountsStart. 
   if ( nrow( overGeneDF  ) > 0 ) {
     ttG <- data.frame(aggregate(subjectHits ~ queryHits, data = overGeneDF, paste, collapse=";"))
@@ -160,8 +158,6 @@
   overDF[,1] <- names(jranges[namesJ])
   namesBins <- as.numeric(overDF[,2])
   overDF[,2] <- names(exonsBins[namesBins])
-  
-  message( "Dentro de ovBinJunction - Segundo Aggregate")  
 
   
   # BUG FIX: aggregate fails with 0-rows dfCountsStart. 
@@ -187,8 +183,6 @@
     namesB <- as.numeric(overJunctionWithinBinsDF[,2])
     overJunctionWithinBinsDF[,1] <- names(jranges[namesJ])
     overJunctionWithinBinsDF[,2] <- names(exonsBins[namesB])
-    
-    message( "Dentro de ovBinJunction - Tercer Aggregate")  
     
     
     # BUG FIX: aggregate fails with 0-rows dfCountsStart. 
@@ -263,9 +257,9 @@
   df <- do.call("cbind", jcounts); head(df)
   colnames(df) <- names(jcounts)
   #desde aca la bifurcacion:parte critica!
-message( "Antes de ovBinJunction")
+
   jranges <- .ovBinJunction(features, jranges)
-  message( "Después de ovBinJunction")
+
   
   jrdf <- data.frame(
       as.data.frame(jranges@elementMetadata$hitBin), 

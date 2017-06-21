@@ -204,15 +204,16 @@
       sep=".")
   
   # Creates result data.frame
-  result <- data.frame(
-      row.names = genomicCoordinates,
-      hitIntron, 
-      hitIntronEvent, 
-      e1i,
-      ie2,
-      jcounts, 
-      pirValues )
-  
+  # TODO: construir con do.call( cbind )
+  result <- do.call( cbind , 
+      list( hitIntron = hitIntron, 
+            hitIntronEvent = hitIntronEvent,
+            e1i, 
+            ie2,
+            jcounts,
+            pirValues ) )
+  rownames( result ) <- genomicCoordinates
+
   return( result )
 
 }
@@ -252,7 +253,7 @@
     
     rownames( sharedRowSum ) <- sharedRowSum$names
     sharedRowSum <- .extractCountColumns( sharedRowSum, targets  )
-    sumJ <- paste( colnames( sharedRowSum ), "jsum", sep="." )
+    
     
     # Creates an new empty data.frame to store the counts of summed counts 
     # ordered by the original junction data frame
@@ -261,7 +262,7 @@
         matrix( NA, 
             nrow = nrow( allJunctionCounts ), 
             ncol = ncol( sharedRowSum ) ) )
-    colnames( sharedRowSumOrdered ) <- sumJ
+    colnames( sharedRowSumOrdered ) <- colnames( sharedRowSum )
     
     orderIndex <- match( row.names( sharedRowSum ), junctionNames ) 
     sharedRowSumOrdered[ orderIndex, ] <- sharedRowSum#OK
@@ -306,12 +307,14 @@
 #  pAS[ ( sharedStartData[ , 1 ] != "-" & df$strand == "+" ) | ( sharedEndData[ , 1 ] != "-" & df$strand == "-" ) ] <- "Alt3ss"
 #  pAS[ sharedStartData[ , 1 ] != "-" & sharedEndData[ , 1 ] != "-"] <- "ES" 
   
-  result <- data.frame(
-      df,                       
-      sharedStartData,
-      sharedEndData
-   #  , pAS )
-   )
+  # TODO: construir con do.call( cbind, ... ) para evitar que aparezcan .1 y .2 
+  # en los nombre de las muestras y puedan filtrarse
+  result <- do.call( cbind, list (
+          df,
+          sharedStartData,
+          sharedEndData
+      #  , pAS )
+          ) )
   
   return( result )
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

@@ -52,6 +52,84 @@
   return( du )
 }
 
+.junctionDUreport <- function ( 
+    counts, 
+    targets, 
+    appendTo = NULL, 
+    minGenReads = 10,
+    minRds = 0.05,
+    threshold = 5,
+    offset   = FALSE,
+    offsetUseFitGeneX = TRUE,
+    contrast = NULL,
+    forceGLM = FALSE 
+    # ------------------------------------------------------------------------ #
+    # Comment to disable priorcounts usage in bin normalization 
+    # , priorCounts = 0 
+    # ------------------------------------------------------------------------ #
+) {
+  
+  du <- if ( is.null( appendTo ) ) new( Class = "ASpliDU" ) else appendTo
+  
+  targets <- ASpli:::.condenseTargetsConditions( targets )
+  
+  df0 <- countsg(counts)
+  
+  dfG0 <- ASpli:::.filterByReads(
+      df0 = df0,
+      targets = targets,
+      min = minGenReads,
+      type = "all")
+  
+  dfGen <- ASpli:::.filterByRdGen(
+      df0 = dfG0,
+      targets = targets,
+      min = minRds,
+      type = "all" )
+  
+  df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
+  
+  df <- ASpli:::.filterJunctionBySample( df0 = df0, 
+      targets = targets, 
+      threshold = threshold)  #mean > one of the condition
+  
+  df <- df[ df$multipleHit == "-",]
+  
+  if( offset ){
+    
+    warning( simpleWarning( "Junctions DU with offsets is not fully tested. Use results with caution") )
+    mOffset <- ASpli:::.getOffsetMatrix( 
+        df, 
+        dfGen,
+        targets,
+        offsetAggregateMode = 'geneMode',
+        offsetUseFitGeneX= offsetUseFitGeneX )
+  } else {
+    mOffset <- NULL
+  }
+
+  junctionsdeSUM <- ASpli:::.junctionsDU_SUM(
+      df = df,
+      dfGen = dfGen,
+      targets = targets,
+      mOffset = mOffset,
+      contrast = contrast,
+      forceGLM = forceGLM 
+      # ------------------------------------------------------------------ # 
+      # Comment to disable priorcounts usage in normalizefeatuebygen.         
+#          ,priorCounts = priorCounts
+      ,priorCounts = 0  
+  # ------------------------------------------------------------------ # 
+  )
+  
+  
+  du@junctions <- junctionsdeSUM
+  message( "Junctions DU completed" )
+  
+  return( du )
+}
+
+
 .DUreportBinSplice <- function (  
     counts, 
     targets, 
@@ -371,7 +449,9 @@ return (dfBin)
 .getFilteringConditions <- function ( targets, contrast, onlyContrast ) {
 
   allConditions <- getConditions( targets )
-      
+  
+  constrast <- if ( is.null( contrast) ) .getDefaultContrasts( targets$condition )
+  
   if ( onlyContrast && ( ! is.null( contrast  ) ) ) {
     return( allConditions[ (contrast != 0) ] ) 
   } else {
@@ -438,7 +518,9 @@ return (dfBin)
   
   group <- targets$condition
   
-  er <- DGEList( counts = df[ , cols ], samples=targets, group=group)
+  groupFactor <- factor( group, unique( group ), ordered = TRUE )
+  
+  er <- DGEList( counts = df[ , cols ], samples=targets, group=groupFactor)
   er <- calcNormFactors( er )
   
   justTwoConditions <- sum( contrast != 0 ) == 2
@@ -455,7 +537,7 @@ return (dfBin)
     et   <- exactTest(er, pair=pair)
   } else {
     if (verbose) message("  Running GLM LRT")
-    groupFactor <- factor( group, unique( group ), ordered = TRUE )
+
     design   <- model.matrix( ~0 + groupFactor, data = er$samples )
     captured <- capture.output(
         er     <- estimateDisp( er, design = design )
@@ -791,13 +873,10 @@ return (dfBin)
 # Calculates the matrix of offset values for normalization
 # TODO: Que es el valor 10^-4 que aparece, se puede pasar como parametro?
 .getOffsetMatrix <- function( df, dfGen, targets, 
-    offsetAggregateMode = c( "geneMode","binMode" )[2], 
+    offsetAggregateMode = c( "geneMode","binMode" )[1], 
     offsetUseFitGeneX = TRUE, verbose = FALSE) {
   
-  locus  <- df[,"locus"]
-  
-  assign("dfGen", dfGen, envir = .GlobalEnv)
-  assign("locus", locus, envir = .GlobalEnv)
+  locus  <- df[, na.omit( match( c("locus","gene"), colnames(df) ) ) ]
   
   if( offsetAggregateMode=="geneMode" ) {
     if(offsetUseFitGeneX){
@@ -832,6 +911,10 @@ return (dfBin)
     # TODO: ¿ Es necesario vectorizar esto ?
     if ( verbose ) message( "  Using binMode for offset matrix")     
     
+    if ( "junction" %in% colnames( df ) ) {
+      stop( simpleError( "Differential usage with offset and 'binMode' is not available." ))
+    }
+    
     a <- by( data = df[,c("feature",rownames(targets))],
              INDICES = as.factor( locus ),
              FUN = function(x){ 
@@ -848,18 +931,7 @@ return (dfBin)
 }
 
 .setDefaultOffsets <- function ( aDGEList , mOffset) {
-#	logNi <- apply( aDGEList$samples[,c("lib.size","norm.factors")],1,
-#			function(x){ log( prod( x ) ) } )
-	
-	# TODO: Check Alternative code 
-#	 logNi <- log( aDGEList$samples[,c("lib.size")] * aDGEList$samples[,"norm.factors"] )
-#	
-#	aDGEList$offset <- log(mOffset) + matrix( rep( logNi, nrow( mOffset )), 
-#			byrow = TRUE, ncol = length( logNi ) )
-#	return ( aDGEList )
- 
- # TODO: CORREGIR
- # Nueva versión. Corrección del offset  
+
    aDGEList$offset <- log(mOffset) 
    return ( aDGEList )
 }

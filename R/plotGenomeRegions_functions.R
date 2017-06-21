@@ -171,9 +171,8 @@
     if ( is.character( plotTitles ) && plotTitles == 'auto' ) {
       plotTitles <- layout
     }
-    print(plotTitles)
-    print(colors)
-    if ( ( ncol( plotTitles ) != ncol(layout) ) | 
+
+   if ( ( ncol( plotTitles ) != ncol(layout) ) | 
          ( nrow( plotTitles ) != nrow(layout) ) |
          ( ncol( colors )     != ncol(layout) ) | 
          ( nrow( colors )     != nrow(layout) ) ) {
@@ -196,7 +195,8 @@
     zoomOnBins = NULL, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
     outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
     annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black',
-    preMergedBAMs = NULL, useTransparency = TRUE, tempFolder = 'tmp', avoidReMergeBams, verbose = TRUE ) {
+    preMergedBAMs = NULL, useTransparency = TRUE, tempFolder = 'tmp', 
+    avoidReMergeBams= FALSE, verbose = TRUE ) {
   
   targets <- .condenseTargetsConditions( targets )
   
@@ -245,7 +245,8 @@
     plotCounter <- plotCounter +1 
     currentGene <- if ( xIsBin ) countsb( counts )[ xi, c('locus') ] else xi
     highLightBin <- highLightBin & xIsBin
-    zoomOnBins <- if ( is.null( zoomOnBins) | ! xIsBin ) NULL 
+
+    zoomOnBins <- if ( ! zoomOnBins | ! xIsBin ) FALSE else  zoomOnBins 
     
     genLims <- c( start( regions[currentGene] ), end( regions[currentGene] ) )
     binLims <- if ( xIsBin ) as.integer( countsb( counts )[ 
@@ -269,8 +270,9 @@
       outfile = outfile,
       genome = genomeTxDb,
       bamFiles = bamfiles,
-      plotNames = conditionMatrix,
+      plotNames = plotTitles,
       colors = colors,
+      mainFontSize = mainFontSize,
       sashimi = sashimi,
       zoomOnBins = zoomOnBins,
       outfileType = outfileType,
@@ -318,26 +320,21 @@
   
   # -------------------------------------------------------------------------- #
   # Zoom on Bins
-  if ( ! is.null( zoomOnBins )) {
+  if ( zoomOnBins  ) {
     minZoomFactor <- abs( binLims[2] - binLims[1] ) / abs(genLims[2]-genLims[1])
     zoomOnBins <- min( max( zoomOnBins, minZoomFactor ) , 1 )
-    deltaG <- abs(genLims[2]-genLims[1]) / zoomOnBins
-    binMean <- (binLims[2] + binLims[1])/2
-    genLims[1] <- max( binMean - deltaG /2, genLims[1] )
-    genLims[2] <- min( binMean + deltaG /2, genLims[2] )
-    genLims[1] <- genLims[1] - as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-    genLims[2] <- genLims[2] + as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
     
+    deltaB <- abs( binLims[2] - binLims[1] )
+    deltaG <- deltaB / zoomOnBins 
+    
+    binMean    <- ( binLims[2] + binLims[1] ) / 2
+    genLims[1] <- max( binMean - deltaG / 2, genLims[ 1 ] )
+    genLims[2] <- min( binMean + deltaG / 2, genLims[ 2 ] )
+    genLims[1] <- genLims[1] - as.integer( abs( genLims[ 2 ] - genLims[ 1 ] ) * 0.1 ) 
+    genLims[2] <- genLims[2] + as.integer( abs( genLims[ 2 ] - genLims[ 1 ] ) * 0.1 ) 
+    
+    genLims <- as.integer( genLims )
   }
-#  if (zoomOnBins) {
-#    if ( genLims[2] - genLims[1] - ( binLims[2] - binLims[1] ) > 2000 ) {
-#      genLims[1] <- binLims[1] - as.integer( abs(binLims[2]-binLims[1])*0.1 ) 
-#      genLims[2] <- binLims[2] + as.integer( abs(binLims[2]-binLims[1])*0.1 )
-#    } 
-#  } else {
-#    genLims[1] <- genLims[1]- as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-#    genLims[2] <- genLims[2]+ as.integer( abs(genLims[2]-genLims[1])*0.1 ) 
-#  }
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #

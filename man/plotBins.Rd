@@ -112,7 +112,7 @@
 }
 
 \seealso{
-  \code{\link{plotTopTagh}}, 
+  \code{\link{plotTopTags}}, 
 }
 
 \examples{
