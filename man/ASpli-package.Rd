@@ -25,8 +25,8 @@
   \tabular{ll}{
     Package: \tab ASpli\cr
     Type: \tab Package\cr
-    Version: \tab 1.3.2\cr
-    Date: \tab 2017-05-19\cr
+    Version: \tab 1.3.4\cr
+    Date: \tab 2017-06-21\cr
     License: \tab  GPL\cr
     Depends: \tab methods, GenomicRanges, GenomicFeatures, edgeR, methods, 
     BiocGenerics, IRanges, GenomicAlignments, Gviz

@@ -438,7 +438,9 @@ return (dfBin)
   
   group <- targets$condition
   
-  er <- DGEList( counts = df[ , cols ], samples=targets, group=group)
+  groupFactor <- factor( group, unique( group ), ordered = TRUE )
+  
+  er <- DGEList( counts = df[ , cols ], samples=targets, group=groupFactor)
   er <- calcNormFactors( er )
   
   justTwoConditions <- sum( contrast != 0 ) == 2
@@ -455,7 +457,7 @@ return (dfBin)
     et   <- exactTest(er, pair=pair)
   } else {
     if (verbose) message("  Running GLM LRT")
-    groupFactor <- factor( group, unique( group ), ordered = TRUE )
+
     design   <- model.matrix( ~0 + groupFactor, data = er$samples )
     captured <- capture.output(
         er     <- estimateDisp( er, design = design )
