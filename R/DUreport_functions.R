@@ -55,8 +55,6 @@
   
   # ------------------------------------------------------------------------ #
   # Filter bins and calculates differential usage of bins 
-  
-    
   du <- .DUReportBins( du, 
                        counts, 
                        targets, 
@@ -315,11 +313,9 @@
     et   <- exactTest(er, pair=pair)
   } else {
     design <- model.matrix( ~0 + group, data = er$samples )
-    
-    cat("design:\n")
-    cat(design)
-    cat("\n")
-    er     <- estimateDisp( er, design = design )
+    captured <- capture.output(
+      er     <- estimateDisp( er, design = design )
+    )
     glf    <- glmFit( er, design = design)  
     et     <- glmLRT( glf, contrast = contrast)
   } 
@@ -563,12 +559,15 @@ return (dfBin)
   ratioStart <- data.frame( df[,cols],dffStart)
   colnames(ratioStart) <- rep(rownames( targets ),2)
   #aca hay que armar un df itnermedio con la suma por condicion:
+
+ 
+
   ff <- rep(group,2)
   colnames(ratioStart) <- paste(ff, rep(1:2,each=length(group)))
   dfSum <- t(apply(ratioStart, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(ratioStart), 
                 sum)}))
-  colnames(dfSum) <- rep(unique(group), each=2)
+  colnames(dfSum) <- rep(unique(group), each=2) # old version
   
   jratioStartRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(dfSum), 
@@ -616,10 +615,12 @@ return (dfBin)
   
   ratioEnd <- data.frame(df[,cols],dffEnd)
   ff <- rep(group,2)
-  colnames(ratioEnd) <- paste(ff, rep(1:2,length(group)))
+  colnames(ratioEnd) <- paste(ff,rep(1:2, each = length(group)))
   dfSum <- t(apply(ratioEnd, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(ratioEnd), sum  )}))
-  colnames(dfSum) <- rep(unique(group),each=2)
+
+  colnames(dfSum) <- rep(unique(group), each = 2) # new version
+  
   jratioEndRes <- t(apply(dfSum, 1, function(x){tapply(as.numeric(x), 
                 INDEX=colnames(dfSum), jratio )}))
 
@@ -707,7 +708,7 @@ return (dfBin)
   
   group <- targets$condition
   
-  if( is.null( contrast ) ) constrast <- .getDefaultContrasts(group)
+  if( is.null( contrast ) ) contrast <- .getDefaultContrasts(group)
   
   er <- DGEList( counts  = df[,cols],
                  samples = targets,
@@ -718,13 +719,15 @@ return (dfBin)
   justTwoConditions <- sum( contrast != 0 ) == 2
   
   # TODO: Forzar GLM no tiene efecto si se pasa un offset. 
-  if( ! forceGLM & is.null( mOffset ) & justTwoConditions ){
+  if( ( !forceGLM ) & is.null( mOffset ) & justTwoConditions ){
 
-    er   <- estimateDisp( er )
+    captured <- capture.output(
+      er   <- estimateDisp( er )
+    )
     pair <- which( contrast != 0 )
     testResult   <- exactTest( er, pair = pair )
     
-#    if( verbose ) message( "ExactTest... done\n" )
+#    message( "ExactTest... done" )
     
   } else {
     
@@ -735,7 +738,7 @@ return (dfBin)
     glf        <- glmFit( er, design = design )  
     testResult <- glmLRT( glf, contrast = contrast )
     
-#    if( verbose ) message( "glmLRT... done\n" )
+#    message( "glmLRT... done" )
 
   } 
   return( testResult )

@@ -166,7 +166,7 @@ setMethod(
     {
     l=readLength
     counts <- new(Class="ASpliCounts")
-    minA <- round( minAnchor * l / 100 )
+    minA <- round( minAnchor * readLength / 100 )
     
     # Count Genes
     gene.hits <- .counterGenes( bam, featuresg( features ), cores )
@@ -185,16 +185,16 @@ setMethod(
 
     # Count exon1 - intron regions
     e1i <- introns
-    start( e1i ) <- start( introns ) - ( l - minA )
-    end( e1i )   <- start( introns ) + ( l - minA )
-    e1i.hits     <- .counterJbin(bam, e1i, gene.hits, cores, l)
+    start( e1i ) <- start( introns ) - ( readLength - minA )
+    end( e1i )   <- start( introns ) + ( readLength - minA )
+    e1i.hits     <- .counterJbin(bam, e1i, gene.hits, cores, readLength)
     message("Read summarization by ei1 region completed")
     
     # Count intron - exon2 regions
     ie2 <- introns
-    start( ie2 ) <- end( introns ) - ( l - minA )
-    end( ie2 )   <- end( introns ) + ( l - minA )
-    ie2.hits     <- .counterJbin( bam, ie2, gene.hits, cores, l )
+    start( ie2 ) <- end( introns ) - ( readLength - minA )
+    end( ie2 )   <- end( introns ) + ( readLength - minA )
+    ie2.hits     <- .counterJbin( bam, ie2, gene.hits, cores, readLength )
     message("Read summarization by ie2 region completed")
     
     # Count junctions
@@ -474,7 +474,6 @@ setMethod(
     write.table( joint(as), asDiscoverFile, sep="\t", quote=FALSE, col.names=NA)
   }
 )
-##########################################################################
 
 # TODO:  Es necesario agregar todos los parametros con valores por default en
 # la firma del metodo ? 
@@ -517,8 +516,8 @@ setMethod(
       ignoreI = FALSE  
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
-          offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM = FALSE,
-        ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE)
+          offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
+        ignoreExternal, ignoreIo, ignoreI )
   }
 )
 
