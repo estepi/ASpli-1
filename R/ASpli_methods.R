@@ -136,7 +136,8 @@ setMethod(
   definition = function(counts, targets) {
     geneStart <- ncol(countsg(counts))-nrow(targets)+1
     gene.rd <- cbind( countsg(counts)[,1:geneStart-1], 
-                      countsg(counts)[,geneStart:ncol(countsg(counts))]/countsg(counts)$effective_length
+                      countsg(counts)[,geneStart:ncol(countsg(counts))] / 
+                          countsg(counts)$effective_length
                    )
     binStart <- ncol(countsb(counts))-nrow(targets)+1
     bin.rd <- cbind(countsb(counts)[, 1:binStart-1], 
@@ -156,15 +157,16 @@ setMethod(
 # readCounts
 setGeneric (
   name = "readCounts",
-  def = function( features, bam,  targets, cores = 1, readLength, maxISize, minAnchor = NULL)
+  def = function( features, bam,  targets, cores = 1, readLength, maxISize, 
+      minAnchor = NULL)
   standardGeneric("readCounts") )
 
 setMethod(
   f = "readCounts",
   signature = "ASpliFeatures",
-  definition = function( features, bam,  targets, cores = 1, readLength,  maxISize, minAnchor = 10) 
-    {
-    l=readLength
+  definition = function( features, bam,  targets, cores = 1, readLength,  
+      maxISize, minAnchor = 10) {
+
     counts <- new(Class="ASpliCounts")
     minA <- round( minAnchor * readLength / 100 )
     
@@ -433,6 +435,11 @@ setMethod(
 
     })
 
+setMethod( 
+    f = 'subset',
+    signature = 'ASpliAS',
+    def = function( x, targets, select) .subset.ASpliAS( x, targets, select ) )
+    
 # ---------------------------------------------------------------------------- #
 # writeAS
 setGeneric (
@@ -491,7 +498,9 @@ setGeneric (
         forceGLM = FALSE,
         ignoreExternal = TRUE,
         ignoreIo = TRUE, 
-        ignoreI = FALSE  
+        ignoreI = FALSE,
+        filterWithContrasted = FALSE,
+        verbose = FALSE
       ) standardGeneric("DUreport") )
 
 #setGeneric (
@@ -513,7 +522,9 @@ setMethod(
       forceGLM = FALSE,
       ignoreExternal = TRUE,
       ignoreIo = TRUE, 
-      ignoreI = FALSE  
+      ignoreI = FALSE,
+      filterWithContrasted = FALSE,
+      verbose = FALSE
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
           offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
@@ -522,17 +533,21 @@ setMethod(
 )
 
 setGeneric( name = 'DUreportBinSplice',
-    def = function( counts, targets, minGenReads  = 10,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE ) 
+    def = function( counts, targets, minGenReads  = 10, minBinReads = 5, 
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE,  
+        ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE, 
+        filterWithContrasted = FALSE ) 
       standardGeneric( 'DUreportBinSplice'))
 
 setMethod( 
     f = 'DUreportBinSplice',
     signature = 'ASpliCounts',
-    definition = function(counts, targets, minGenReads  = 10,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE  ) {
-      .DUreportBinSplice( counts, targets, minGenReads, minRds, contrast, 
-          forceGLM ) 
+    definition = function( counts, targets, minGenReads  = 10, minBinReads = 5,
+        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreExternal = TRUE,
+        ignoreIo = TRUE, ignoreI = FALSE, filterWithContrasted = FALSE ) {
+      .DUreportBinSplice( counts, targets, minGenReads, minBinReads, minRds, 
+          contrast, forceGLM, ignoreExternal, ignoreIo, ignoreI, 
+          filterWithContrasted ) 
     })
 
 setGeneric( name = "junctionDUReport",
@@ -543,24 +558,23 @@ setGeneric( name = "junctionDUReport",
         minRds = 0.05,
         threshold = 5,
         offset   = FALSE,
-        offsetAggregateMode = c("geneMode","binMode")[2],
         offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE 
         ) standardGeneric("junctionDUReport") )
 
+  
 setMethod(
     f = "junctionDUReport",
     signature = "ASpliCounts",
     definition = function ( 
         counts, 
         targets, 
-        appendTo = NULL, 
+        appendTo = NULL,
         minGenReads = 10,
         minRds = 0.05,
         threshold = 5,
-        offset   = FALSE,
-        offsetAggregateMode = c("geneMode","binMode")[2],
+        offset = FALSE,
         offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE 
@@ -570,138 +584,28 @@ setMethod(
         # -------------------------------------------------------------------- #
         ) {
       
-      du <- if ( is.null( appendTo ) ) new( Class = "ASpliDU" ) else appendTo
-      
-      targets <- .condenseTargetsConditions( targets )
-      
-      df0 <- countsg(counts)
-      
-      dfG0 <- .filterByReads(
-          df0 = df0,
-          targets = targets,
-          min = minGenReads,
-          type = "all")
-      
-      dfGen <- .filterByRdGen(
-          df0 = dfG0,
-          targets = targets,
-          min = minRds,
-          type = "all" )
-      
-      df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
-      
-      df <- .filterJunctionBySample( df0 = df0, 
-          targets = targets, 
-          threshold = threshold)  #mean > one of the condition
-      
-      df <- df[ df$multipleHit == "-",]
-      
-      if( offset ){
-        warning( "Junctions DU with offsets is not fully tested. Use results with caution.\n")
-        mOffset <- getOffsetMatrix( 
-            dfBin, 
-            dfGen,
-            targets,
-            offsetAggregateMode = offsetAggregateMode,
-            offsetUseFitGeneX= offsetUseFitGeneX )
-      } else {
-        mOffset <- NULL
-      }
-      
-      junctionsdeSUM <- .junctionsDU_SUM(
-          df = df,
-          dfGen = dfGen,
-          targets = targets,
-          mOffset = mOffset,
-          contrast = contrast,
-          forceGLM = forceGLM 
-          # ------------------------------------------------------------------ # 
-          # Comment to disable priorcounts usage in normalizefeatuebygen.         
-#          ,priorCounts = priorCounts
-          ,priorCounts = 0  
-          # ------------------------------------------------------------------ # 
-      )
-      
-      
-      du@junctions <- junctionsdeSUM
-      message( "Junctions DU completed" )
-      
-      return( du )
-    } )
-
+      .junctionDUreport( counts, targets, appendTo,  minGenReads,  minRds, 
+          threshold, offset, offsetUseFitGeneX, contrast, 
+          forceGLM ) 
+    }
+)
     
-# TODO: Que pasa con las funciones de DEXSeq con las nuevas modificaciones de
-# ASpli
-#setMethod(
-#  f = "DUreport_DEXSeq",
-#  signature = "ASpliCounts",
-#  definition = function(counts, targets, pair, group, 
-#                      minGenReads=NULL,
-#                      minBinReads=NULL,
-#                      minRds=NULL,
-#                      threshold=NULL) {
-#                    
-#    du <- new(Class="ASpliDU")
-#    #define parameters#
-#    if(is.null(minGenReads)){minGenReads=10}
-#    if(is.null(minBinReads)){minBinReads=5}
-#    if(is.null(minRds)){minRds=0.05}
-#    if(is.null(threshold)){threshold=5}
-#    ###############################################
-#    df0 <- countsg(counts)
-#    dfG0 <- .filterByReads(df0=df0,
-#                         targets=targets,
-#                         min=minGenReads,
-#                         type="any")
-#    dfGen <- .filterByRdGen(df0=dfG0,
-#                          targets=targets,
-#                          min=minRds,
-#                          type="any")
-#    genesde <- .genesDE_DESeq(df=dfGen, 
-#                            targets=targets, 
-#                            pair=pair) 
-#    du@genes <- genesde 
-#    
-#    ###############################################################
-#    dfG0 <- .filterByReads(df0=df0,
-#                         targets=targets,
-#                         min=minGenReads,
-#                         type="all")
-#    dfGen <- .filterByRdGen(df0=dfG0,
-#                          targets=targets,
-#                          min=minRds,
-#                          type="all")
-#    
-#    dfBin <- countsb(counts)[countsb(counts)[,"locus"]%in%row.names(dfGen),]
-#    df1 <- .filterByReads(df0=dfBin,
-#                        targets=targets, 
-#                        min=minBinReads,
-#                        type="any")
-#    df2 <- .filterByRdBinRATIO(
-#      dfBin=df1,
-#      dfGen=dfGen,
-#      targets=targets, 
-#      min=minRds,
-#      type="any")
-#    #bins con AS en binsN
-#    binsdu <- .binsDU_DEXSeq(df=df2,
-#                           targets=targets,
-#                           group=group) 
-#    du@bins <- binsdu
-#    ########################################################################
-#    df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
-#    df <- .filterJunctionBySample(df0=df0, 
-#                                targets=targets, 
-#                                threshold=threshold)  #mean > one of the condition
-#    df <- df[df$multipleHit=="-",]
-#    junctionsdeSUM <- .junctionsDU_SUM_DEXSeq(df,
-#                                            targets=targets, 
-#                                            genesde=genesde,
-#                                            group=group)
-#    du@junctions <- junctionsdeSUM
-#    return(du)
-#  }
-#)
+setMethod( f = 'subset',
+    signature = 'ASpliCounts',
+    def = function( x, targets, select ) { .subset.ASpliCounts( x, targets, select ) }  )
+
+setGeneric( 
+    name = 'filterDU',
+    def = function( du, what = c( 'genes','bins','junctions'), fdr = 1, 
+        logFC = 0, absLogFC = TRUE, logFCgreater = TRUE ) standardGeneric('filterDU') )
+
+setMethod(
+    f = 'filterDU',
+    signature = "ASpliDU",
+    definition = function( du, what = c( 'genes','bins','junctions'), fdr = 1, 
+        logFC = 0, absLogFC = TRUE, logFCgreater = TRUE ) {
+      .filter.ASpliDU( du, what, fdr, logFC, absLogFC, logFCgreater ) } )
+
 
 # ---------------------------------------------------------------------------- #
 # writeDU
@@ -775,9 +679,165 @@ setMethod(
         write.table( junctionsDU( du ), junctionsFile, sep = "\t", quote = FALSE, 
             col.names=NA )
       }
-
-      
     }
 )
+
+setGeneric( name = 'mergeBinDUAS',
+    def = function( du, as, targets, contrast = NULL  ) 
+      standardGeneric( 'mergeBinDUAS' ))
+
+setMethod( f = 'mergeBinDUAS',
+    signature = c( 'ASpliDU', 'ASpliAS' ),
+    definition = function( du, as, targets, contrast = NULL  ) {
+      .mergeBinDUAS( du, as, targets, contrast ) } )
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# plotBins
+setGeneric( name = "plotBins",
+    def = function(
+        counts, 
+        as,
+        bin, 
+        factorsAndValues, 
+        targets,
+        main            = NULL,
+        colors          = c( '#2F7955', '#79552F', '#465579', '#A04935', '#752020', 
+            '#A07C35') ,
+        panelTitleColors = '#000000',
+        panelTitleCex   = 1,
+        innerMargins    = c( 2.1, 3.1, 1.1, 1.1 ),
+        outerMargins    = c( 0, 0, 2.4, 0 ), 
+        useBarplots     = NULL,
+        barWidth        = 0.9,
+        barSpacer       = 0.4,
+        las.x           = 2,
+        useHCColors     = FALSE,
+        legendAtSide    = TRUE,
+        outfolder       = NULL,
+        outfileType     = 'png',
+        deviceOpt       = NULL ) standardGeneric( 'plotBins' ) )
+
+setMethod( 
+    f = "plotBins",
+    signature = 'ASpliCounts',
+    definition = function( 
+        counts, 
+        as,
+        bin, 
+        factorsAndValues, 
+        targets,
+        main            = NULL,
+        colors          = c( '#2F7955', '#79552F', '#465579', '#A04935', 
+            '#752020', '#A07C35') ,
+        panelTitleColors = '#000000',
+        panelTitleCex   = 1,
+        innerMargins    = c( 2.1, 3.1, 1.1, 1.1 ),
+        outerMargins    = c( 0, 0, 2.4, 0 ), 
+        useBarplots     = NULL,
+        barWidth        = 0.9,
+        barSpacer       = 0.4,
+        las.x           = 2,
+        useHCColors     = FALSE,
+        legendAtSide    = TRUE,
+        outfolder       = NULL,
+        outfileType     = 'png',
+        deviceOpt       = NULL ) {
+      
+      .plotBins( counts, as, bin, factorsAndValues, targets, main, colors, 
+          panelTitleColors, panelTitleCex, innerMargins, outerMargins, 
+          useBarplots, barWidth, barSpacer, las.x, useHCColors, legendAtSide,
+          outfolder, outfileType, deviceOpt )
+    } 
+)
+# ---------------------------------------------------------------------------- # 
+
+# ---------------------------------------------------------------------------- #
+# plotGenomicRegions
+setGeneric( 
+    name = "plotGenomicRegions", 
+    def = function( 
+        counts, 
+        x, 
+        genomeTxDb, 
+        targets, 
+        xIsBin = TRUE, 
+        layout = 'auto', 
+        colors = 'auto', 
+        plotTitles = 'auto', 
+        sashimi = FALSE, 
+        zoomOnBins= FALSE, 
+        deviceOpt = NULL, 
+        highLightBin = TRUE, 
+        outfolder = NULL, 
+        outfileType = 'png', 
+        mainFontSize = 24, 
+        annotationHeight = 0.2,
+        annotationCol = 'black', 
+        annotationFill = 'gray', 
+        annotationColTitle = 'black',
+        preMergedBAMs = NULL,
+        useTransparency = FALSE,
+        tempFolder = 'tmp',
+        avoidReMergeBams = FALSE,
+        verbose = FALSE) standardGeneric( "plotGenomicRegions" ) )
+
+setMethod(
+    f = "plotGenomicRegions",
+    signature = "ASpliCounts",
+    definition = function ( 
+        counts, 
+        x, 
+        genomeTxDb, 
+        targets, 
+        xIsBin = TRUE, 
+        layout = 'auto', 
+        colors = 'auto', 
+        plotTitles = 'auto', 
+        sashimi = FALSE, 
+        zoomOnBins= FALSE, 
+        deviceOpt = NULL, 
+        highLightBin = TRUE, 
+        outfolder = NULL, 
+        outfileType = 'png', 
+        mainFontSize = 24, 
+        annotationHeight = 0.2, 
+        annotationCol = 'black', 
+        annotationFill = 'gray', 
+        annotationColTitle = 'black',
+        preMergedBAMs = NULL,
+        useTransparency = TRUE,
+        tempFolder = 'tmp',
+        avoidReMergeBams = FALSE,
+        verbose = FALSE) {
+      
+          .plotGenomicRegions(
+              x, 
+              genomeTxDb, 
+              counts, 
+              targets, 
+              xIsBin, 
+              layout, 
+              colors, 
+              plotTitles, 
+              sashimi, 
+              zoomOnBins, 
+              deviceOpt, 
+              highLightBin, 
+              outfolder, 
+              outfileType,
+              mainFontSize, 
+              annotationHeight, 
+              annotationCol, 
+              annotationFill, 
+              annotationColTitle,
+              preMergedBAMs,
+              useTransparency,
+              tempFolder,
+              avoidReMergeBams ,
+              verbose )
+    }
+)
+        
 # ---------------------------------------------------------------------------- #
 

@@ -1,22 +1,4 @@
-# This function sums counts of a data frame by condition.
-# The conditions are given in the targets data.frame.
-# the dataframe to be summed must have the same number of columns as samples 
-# in the targets, and they must have the same order.
-.sumByCond <- function( countDf, targets ) {
-  countDf[ is.na( countDf )] <- 0
-  uniqueConditions <- unique( targets$condition )
-  nConditions <- length( uniqueConditions )
-  result <- matrix( 
-      data = 0, 
-      nrow = nrow( countDf) , 
-      ncol = nConditions )
-  
-  for( i in 1:nConditions ) {
-    result[ , i ] <- rowSums( countDf[ , targets$condition == uniqueConditions[i] ] )
-  }
-  colnames( result ) <- uniqueConditions
-  return ( result )
-}
+
 
 # Filter junctions that has in at least one condition a given (threshold) number
 # of junction for all samples.
@@ -222,15 +204,16 @@
       sep=".")
   
   # Creates result data.frame
-  result <- data.frame(
-      row.names = genomicCoordinates,
-      hitIntron, 
-      hitIntronEvent, 
-      e1i,
-      ie2,
-      jcounts, 
-      pirValues )
-  
+  # TODO: construir con do.call( cbind )
+  result <- do.call( cbind , 
+      list( hitIntron = hitIntron, 
+            hitIntronEvent = hitIntronEvent,
+            e1i, 
+            ie2,
+            jcounts,
+            pirValues ) )
+  rownames( result ) <- genomicCoordinates
+
   return( result )
 
 }
@@ -270,7 +253,7 @@
     
     rownames( sharedRowSum ) <- sharedRowSum$names
     sharedRowSum <- .extractCountColumns( sharedRowSum, targets  )
-    sumJ <- paste( colnames( sharedRowSum ), "jsum", sep="." )
+    
     
     # Creates an new empty data.frame to store the counts of summed counts 
     # ordered by the original junction data frame
@@ -279,7 +262,7 @@
         matrix( NA, 
             nrow = nrow( allJunctionCounts ), 
             ncol = ncol( sharedRowSum ) ) )
-    colnames( sharedRowSumOrdered ) <- sumJ
+    colnames( sharedRowSumOrdered ) <- colnames( sharedRowSum )
     
     orderIndex <- match( row.names( sharedRowSum ), junctionNames ) 
     sharedRowSumOrdered[ orderIndex, ] <- sharedRowSum#OK
@@ -324,12 +307,14 @@
 #  pAS[ ( sharedStartData[ , 1 ] != "-" & df$strand == "+" ) | ( sharedEndData[ , 1 ] != "-" & df$strand == "-" ) ] <- "Alt3ss"
 #  pAS[ sharedStartData[ , 1 ] != "-" & sharedEndData[ , 1 ] != "-"] <- "ES" 
   
-  result <- data.frame(
-      df,                       
-      sharedStartData,
-      sharedEndData
-   #  , pAS )
-   )
+  # TODO: construir con do.call( cbind, ... ) para evitar que aparezcan .1 y .2 
+  # en los nombre de las muestras y puedan filtrarse
+  result <- do.call( cbind, list (
+          df,
+          sharedStartData,
+          sharedEndData
+      #  , pAS )
+          ) )
   
   return( result )
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

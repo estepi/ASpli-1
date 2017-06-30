@@ -8,7 +8,6 @@ setGeneric( name = "featuresg<-", def = function( x, value ) standardGeneric("fe
 setReplaceMethod( f = "featuresg", signature = c( "ASpliFeatures", 'GRangesList' ),
     definition = function( x , value){  x@genes <- value; return( x ) } )
 
-
 setGeneric( name = "featuresj", def = function( x ){ standardGeneric("featuresj") } )
 setMethod( f = "featuresj", signature = "ASpliFeatures", 
     definition = function(x){ x@junctions })
@@ -35,7 +34,6 @@ setMethod( f = "countsg", signature = "ASpliCounts",
 setGeneric( name= "countsg<-", def=function( x, value ) standardGeneric("countsg<-") )
 setReplaceMethod( f = "countsg", signature = c( "ASpliCounts", "data.frame") ,
    definition = function( x, value ){ x@gene.counts <- value; return ( x )} )
-       
        
 setGeneric ( name = "countsj", def = function( x ) standardGeneric("countsj") )
 setMethod (f = "countsj", signature = "ASpliCounts", 
@@ -335,8 +333,7 @@ setMethod(
     suppressWarnings( writeDU( du, output.dir ) )
     
     # Export as+du table
-    # TODO: write a setter for irPIR and others slots
-    colnames( as@irPIR ) <- colnames( altPSI( as ) )
+    colnames( irPIR( as ) ) <- colnames( altPSI( as ) )
     conP <- rbind( altPSI(as), esPSI(as), irPIR(as) )
     ii   <- match( rownames( binsDU( du ) ), row.names(conP) )
     bins.join <- data.frame( binsDU(du), conP[ii,])
@@ -357,46 +354,3 @@ setMethod(
 # ---------------------------------------------------------------------------- # 
 
 
-# ---------------------------------------------------------------------------- #
-setGeneric( name = "plotBins",
-    def = function( counts, as, bin, ... ) standardGeneric( 'plotBins' ) )
-
-setMethod( 
-    f = "plotBins",
-    signature = 'ASpliCounts',
-    definition = function( 
-        counts, 
-        as, 
-        bin,     
-        factorsAndValues, 
-        targets,
-        main = NULL,
-        binCountsColor  = '#2F7955',
-        geneCountsColor = '#79552F',
-        psirColor       = '#465579',
-        j1CountsColor   = '#A04935',
-        j2CountsColor   = '#752020',
-        j3CountsColor   = '#A07C35',
-        useBarplots     = NULL ) {
-      
-      for ( cBin in bin) {
-        .plotBins( 
-            counts, 
-            as, 
-            cBin,     
-            factorsAndValues, 
-            targets,
-            main = NULL,
-            binCountsColor,
-            geneCountsColor,
-            psirColor,
-            j1CountsColor,
-            j2CountsColor,
-            j3CountsColor,
-            useBarplots )
-      }
-    } 
-)
-
-# 
-# ---------------------------------------------------------------------------- # 

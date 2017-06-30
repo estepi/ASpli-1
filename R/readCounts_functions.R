@@ -108,7 +108,20 @@
   overGeneDF$queryHits <- names(jranges)[as.numeric(overGeneDF$queryHits)]
   overGeneDF$subjectHits <- names(genes)[as.numeric(overGeneDF$subjectHits)]
   table <- table(overGeneDF$queryHits)
-  ttG <- data.frame(aggregate(subjectHits ~ queryHits, data = overGeneDF, paste, collapse=";")) 
+  
+  # BUG FIX: aggregate fails with 0-rows dfCountsStart. 
+  if ( nrow( overGeneDF  ) > 0 ) {
+    ttG <- data.frame(aggregate(subjectHits ~ queryHits, data = overGeneDF, paste, collapse=";"))
+  } else {
+    ttG <- data.frame( names = character(0) ) 
+    for ( i in 1:ncol( overGeneDF ) ) {
+      ttG[, i+1] <- integer(0)
+    }
+    colnames( ttG )[2:ncol(ttG)] <- colnames( overGeneDF )
+  }
+  
+  #ttG <- data.frame(aggregate(subjectHits ~ queryHits, data = overGeneDF, paste, collapse=";"))
+  
   dd0 <- match(ttG$queryHits,names(jranges))
   hitGen[dd0] <- ttG$subjectHits
   dd <- match(ttG$queryHits,names(table))
@@ -145,7 +158,20 @@
   overDF[,1] <- names(jranges[namesJ])
   namesBins <- as.numeric(overDF[,2])
   overDF[,2] <- names(exonsBins[namesBins])
-  tt <- data.frame(aggregate(subjectHits ~ queryHits, data = overDF, paste, collapse=";")) 
+
+  
+  # BUG FIX: aggregate fails with 0-rows dfCountsStart. 
+  if ( nrow( overDF  ) > 0 ) {
+    tt <- data.frame(aggregate(subjectHits ~ queryHits, data = overDF, paste, collapse=";")) 
+  } else {
+    tt <- data.frame( names = character(0) ) 
+    for ( i in 1:ncol( overDF ) ) {
+      tt[, i+1] <- integer(0)
+    }
+    colnames( tt )[2:ncol(tt)] <- colnames( overDF )
+  }
+  
+  
   span <- rep("-", length(jranges))
   te <- match(names(jranges), tt$queryHits) #ok
   span <- tt$subjectHits[te]
@@ -219,7 +245,9 @@
   df <- do.call("cbind", jcounts); head(df)
   colnames(df) <- names(jcounts)
   #desde aca la bifurcacion:parte critica!
+
   jranges <- .ovBinJunction(features, jranges)
+
   
   jrdf <- data.frame(
       as.data.frame(jranges@elementMetadata$hitBin), 
