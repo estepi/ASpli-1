@@ -15,6 +15,7 @@ options(continue=" ")
 \usepackage{amsmath}
 \usepackage{float}
 
+\newcommand{\secref}[1]{\ref{#1}:\nameref{#1}}
 
 \newfloat{captionedEq}{thp}{eqc}
 \floatname{captionedEq}{Equation}
@@ -253,9 +254,9 @@ binMetadata   <- mcols( binCoord )
 # extract features and map symbols to genes
 symbols       <- data.frame( row.names = genes( aTxDb ), 
                              symbol = paste( 'This is symbol of gene:',
-                                             genes( aTxDb ) ) ) )
+                                             genes( aTxDb ) ) )
 features      <- binGenome( aTxDb, geneSymbols = symbols ) 
-<<binGenome, echo=TRUE, eval=FALSE>>=
+@
 
 \subsection{ Defining the targets }
 \label{sec:targetsDef}
@@ -565,87 +566,248 @@ section \nameref{sec:targetsDef}.
 computation.
 \end{itemize}
 
+The contents of an \texttt{ASpliAS} object can be retrieved using accessor
+methods: \texttt{irPIR}, \texttt{altPSI}, \texttt{esPSI},
+\texttt{joint} \texttt{junctionPIR}, \texttt{junctionPSI} (see section
+\secref{secASpliAsContent} for a detailed description of each method and retrieved data). In addition, method
+\texttt{writeAS}, allows to easily export all the data into text files tables.
+
+
+<<writeAS, echo=TRUE, eval=FALSE>>=
+# Access result from an ASpliAS object 
+irPIR  <- irPIR( as )
+altPSI <- altPSI( as )
+esPSI  <- esPSI( as )
+junctionsPIR <- junctionsPIR( as )
+junctionsPSI <- junctionsPSI( as )
+allBins      <- joint( as )
+
+# Export results to files
+writeAS(as=as, output.dir="example")
+@
+
 \subsubsection{ PIR and PSI metrics } \label{sec:psir}
 To provide an integrative view of the AS events being analyzed, splice junction
 information is used to analyze differential bin usage. PSI (percent of
 inclusion) and PIR (percent of intron retention) metrics, which are extensively
-used to quantify AS \cite{pmid21057496}, are calculated. (see figure
-\ref{fig:psirEq} ) In the case of exonic bins, PSI values are computed using
-junctions that share start or end positions and fully span the exon. In  the
-case of intronic bins, the PIR metric is computed using junctions that share 
-start and end with each intronic bin, and read counts in regions spanning the 
-intron/exon boundary. This information allows the user to obtain reliable 
-information on the relative abundance of the AS event being evaluated. Both 
-metrics strongly enrich the count-centric analysis and provide independent 
-experimental support for the existence of novel AS events, based on the 
-identification of corresponding changes in nearby splice junctions.
+used to quantify AS \cite{pmid21057496}, are calculated (see figure
+\ref{fig:pirEq} ) for bins junctions. 
 
-In addition, it is also possible to access and export tables:
-<<writeAS, echo=TRUE, eval=FALSE>>=
-irPIR <- irPIR(as)
-altPSI <- altPSI(as)
-esPSI <- esPSI(as)
-junctionsPIR <- junctionsPIR(as)
-junctionsPSI <- junctionsPSI(as)
+\begin{figure}[ht!]
+    \begin{subfigure}[t]{1\textwidth}
+    \centering
+      \includegraphics[width=0.7\textwidth]{images/psi5ss.pdf}
+      \includegraphics[width=0.7\textwidth]{images/psi3ss.pdf}      
+      \caption{PSI metric for alternative 5' and 3' splicing sites estimation and its relationship with junctions}
+    \end{subfigure}
+    \begin{subfigure}[t]{1\textwidth}
+    \centering
+      \includegraphics[width=0.7\textwidth]{images/psies.pdf}
+      \caption{PSI metric for exon skipping estimation and its relationship with
+      junctions}
+    \end{subfigure}
+    \begin{subfigure}[t]{1\textwidth}
+      \centering
+      \includegraphics[width=0.7\textwidth]{images/pir.pdf}
+      \caption{PIR metric for intron retention estimation and its relationship
+      with junctions}
+    \end{subfigure}    
+    \caption{PSI and PIR metrics estimation and their relationship with
+    junctions}
+    \label{fig:pirEq}
+\end{figure}
 
-writeAS(as=as, output.dir="example")
-@
+For each bin, one of PIR or PSI variants metrics is calculated, the decision of
+which one is selected depends on the splice event assigned to that bin (see
+section \secref{sec:eventAssign}). If no splice event is assigned, meaning that
+the bin is not alternative, an exon are considered to be involved in
+a putative exon skiping splicing event, and an intron are considered to be
+involved in a putative intron retention splicing event. 
+
+Every junction implies the existence of an intron that could be potentially 
+retained, therefore a PIR value is computed for every junction. Also, every
+junction defines a 5' and a 3' splicing site. Each one of these can be found
+exclusively in this junction or found also in other junctions. The latter is
+evidence of an exon skipping event or and alternative 5' or 3' splicing site
+event. Althought is not possible to infer the kind of event, the computation of
+a PSI value is helpful to detect this cases. The details of the formulas used to
+calculted these values are shown in \ref{fig:psir_junc}
+
+This information allows the user to obtain reliable information on the relative
+abundance of the AS event being evaluated. Both metrics strongly enrich the 
+count-centric analysis and provide independent experimental support for the 
+existence of novel AS events, based on the identification of corresponding 
+changes in nearby splice junctions.
+
+\begin{figure}
+  \begin{subfigure}[t]{1\textwidth}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/pir_junc.pdf}
+    \caption{ PIR metric to estimate intron retention for junctions}
+  \end{subfigure}
+  \begin{subfigure}[t]{1\textwidth}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/psi_junc.pdf}
+    \caption{ PSI metric to compute inclusion of exons bearing a junction.} 
+  \end{subfigure}
+  \caption{PSI and PIR metrics for junctions}
+  \label{fig:psir_junc}
+\end{figure}
+
 
 \subsubsection{New splicing events discovery} 
-ASpli allows novel AS events to be identified based on the splice junction
-repertoire. A novel AS event is identified whenever a novel splice junction that
-shares its beginning or end with another splice junction is discovered. When a
-novel AS event is identified using the splice junction repertoire, the PSI
-metric is calculated and reported. This ability to detect novel AS events and to
-estimate the magnitude of the changes in the usage of these AS events under
-different experimental conditions are original functions of the package.
-
-\begin{figure*}[ht!]
-    \centering
-    \begin{subfigure}[t]{1\textwidth}
-    \centering
-      \includegraphics[width=0.5\textwidth]{psi_altSS.png}
-      \caption{PSI metric for AltSS estimation and its relationship with junctions}
-    \end{subfigure}
-
-    \begin{subfigure}[t]{1\textwidth}
-    \centering
-    \includegraphics[width=0.5\textwidth]{psi_es.png}
-    \caption{PSI metric for ES estimation and its relationship with junctions}
-    \end{subfigure}
-    
-    \begin{subfigure}[t]{1\textwidth}
-    \centering
-    \includegraphics[width=0.5\textwidth]{pir.png}
-    \caption{PIR metric for IR estimation and its relationship with junctions}
-    \end{subfigure}
-    \label{fig:psirEq}
-    \caption{PSI and PIR metrics estimation and their relationship with junctions}
-\end{figure*}
+\texttt{ASpli} allows novel AS events to be identified based on the splice
+junction repertoire. A novel AS event can be is identified whenever a
+novel splice junction that shares its beginning or end with another splice 
+junction is discovered. When a novel AS event is identified using the splice
+junction repertoire, the PSI metric is calculated and reported. This ability to
+detect novel AS events and to estimate the magnitude of the changes in the usage
+of these AS events under different experimental conditions are original
+functions of the package.
 
 \subsubsection{Contents of ASpliAS object}
+\label{secASpliAsContent}
 
-\subsection{Estimating differential gene expression and bin/junction usage}
+Accessor methods of \texttt{ ASpliAS } object return \texttt{data.frame}
+objects containing detailed information for bins involved in intron retention,
+5' or 3' alternative splicing site and exon skipping events, and for
+experimental junctions. 
 
-Using the generated counting tables it is possible to estimate the differential
-usage (DU) of bins and junctions, and the differential expression at gene level
-(DE) using any analysis methodology of choice. For the sake of user convinience,
-e included two wrapper functions, \texttt{DUreport} and
-\texttt{DUreport\_DEXseq}, that allow to perform such analysis using any of two
-widespread used methodologies: edgeR and DEXseq, respectively.
+\begin{itemize}
+  \item Results for bins involved in intron retention, alternative 5' or 3'
+  splicing site, and exon skipping events can be accessed with \texttt{irPIR},
+  \texttt{altPSI} and \texttt{esPSI} respectively, or using \texttt{joint}
+  method for all of them altogether. These methods return a \texttt{data.frame}
+  object which columns are specified below. The description given uses
+  \textbf{J1}, \textbf{J2}, \textbf{J3} count values, which have different
+  meaning for different metrics, see figures \ref{fig:pirEq} and
+  \ref{fig:psir_junc} for more detail.
+    \begin{description}
+      \item[row.names] Bin name as is defined in \secref{sec:binNaming}.
+      \item[event] Splicing event asigned to the bin (see section
+      \ref{sec:binDefinition}:\nameref{sec:eventAssign})
+      \item[J1] The name of J1 junction or E/I flanking region.
+      \item[sample data for J1] J1 counts for each sample.
+      \item[J2] The name of J2 junction or E/I flanking region.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[J3] The name of J3 junction or E/I flanking region.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[PSI or PIR data] A column by condition with the corresponding PSI
+      variant metric or PIR metric.
+      \\
+    \end{description}
+  \item Results for experimental junctions assuming that they correspond to
+  introns involved in intron retention events can be accessed with
+  \texttt{junctionPIR} method. The returning value is a \texttt{data.frame} with
+  columns:
+    \begin{description}
+      \item[row.names] Junction name in format \texttt{chromosome.5'site-3'site}.
+      \item[hitIntron] The name of a bin that match exactly with positions of
+      the junction, if it exists.
+      \item[hitIntronEvent] If \texttt{hitIntron} is not empty, contains the
+      splicing event assigned to that bin.
+      \item[event] Splicing event asigned to the bin (see section
+      \ref{sec:binDefinition}:\nameref{sec:eventAssign})
+      \item[sample data for J1] J1 counts for each sample.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[PSI data] A column by condition with the corresponding PIR metric.
+      \\
+    \end{description}
+  \item Results for experimental junctions assuming that the bearing
+  exons are involved in alternative splice events can be accessed with
+  \texttt{junctionPSI} method. The returning value is a \texttt{data.frame} with
+  columns:
+    \begin{description}
+      \item[row.names] Junction name in format \texttt{chromosome.5'site-3'site}.
+      \item[junction] If junction coincides with a junction inferred
+      from the annotation, the name is shown as is given in section
+      \ref{sec:binDefinition}:\nameref{sec:binDefinition}, otherwise
+      contains \texttt{noHit}.
+      \item[gene] The name of the locus that contains the junction.
+      \item[strand] Sense strand of the gene.
+      \item[multipleHit] Contains \texttt{yes} if junction spans multiple
+      genes.
+      \item[symbol] An optional common name for the gene, that must be provided at
+      the moment of feature extraction (see section
+      \secref{sec:binDefinition}).
+      \item[gene\_coordinates] Show the genomic coordinates of the gene with
+      format \texttt{chromosome:start-end}.
+      \item[bin\_spanned] The names of the bins spanned by the junction.
+      \item[j\_within\_bin] If junction fall within a single bin, the name of
+      that bin is shown.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[StartHit] The name of J1 junction.
+      \item[sample data for J1] J1 counts for each sample.
+      \item[PSI data] A column by condition with the PSI metric for J1. The name
+      of the column is the name of the condition with '.start' suffix.
+      \item[EndHit] The name of J2 junction.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[PSI data] A column by condition with the PSI metric for J2. The name
+      of the column is the name of the condition with '.end' suffix.
+      \\
+    \end{description}  
 
-DUreport function performs statistical tests using a count centric approach.
-Results are stored into an \texttt{ASpliDU} object. Individual tables can be
-accesed using accesors and exported using \texttt{writeDU} function.
+\end{itemize}
 
-<<group, eval=FALSE, echo=TRUE>>=
-du <- DUreport(counts, targets)
-@
+\subsection{ Estimating differential gene expression and bin/junction usage}
+
+Using the generated counting data, it is possible to estimate the differential
+usage (\textbf{DU}) of bins and junctions, and the differential expression at
+gene level (\textbf{DE}) using any analysis methodology of choice. For the sake
+of user convinience, ASpli provides methods to perform statistical analysis 
+using the functionality of \texttt{edgeR} package.
+
+The methods provided are \texttt{DUreport}, \texttt{DUreportBinSplice},
+\texttt{junctionDUreport}. \texttt{DUreport} and \texttt{DUreportBinSplice}
+have the same purposes, perform DE statistical tests for genes and DU
+statistical tests for bins using a count centric approach.
+The differende is the methodology used for bin DU. \texttt{junctionDUreport} do
+a similar analysis for junctions. The usage of these methods will be discussed in detail
+in the following sections. Results are stored into an \texttt{ASpliDU} object
+and can be accessed individual for genes, bins and junctions using the accesors
+methods \texttt{genesDE}, \texttt{binsDU} and \texttt{junctionDU}
+respectively. Also, can be exported as text files tables using \texttt{writeDU}
+function.
+
+%<<group, eval=FALSE, echo=TRUE>>=
+%du <- DUreport(counts, targets)
+%@
 
 \subsubsection{Differential gene expression (DE)}
-Genes are considered expressed if they received in average (parameter \texttt{minGenReads}, default=10)  more than a minimum number of reads  and if average read density per condition is above a threshold in any condition (parameter \texttt{minRds}, default=0.05). Differential gene expression is estimated using edgeR \cite{Robinson2012} package. \textbf{logFC}, \textbf{pvalue}, and \textbf{adjusted pvalue} by false discovery rate \cite{fdr} are reported. 
 
-\subsubsection{Differential junctions and bin usage (DU)}
+The first step of the genes DE analysis pipeline is the selection of those
+annotated genes that are considered to be expressed, at least that can be
+confidently detected. For this, the average number of reads for each gene
+and condition and the average read density for each gene and condition are
+calculated as shown below:
+
+\begin{eqnarray*}
+   \hat G^{c}_{ij} = \sum_{k \in K_j} \frac{ S^{c}_{ik} }{ |K_j| } \\
+   \hat G^{rd}_{ij} = \sum_{k \in K_j} \frac{ S^{rd}_{ik} }{ |K_j| }
+   \label{eq:genByCond}
+\end{eqnarray*}
+
+Where $\hat G^{c}_{ij}$ is avg. gene count for gene $i$ in condition $j$,
+$\hat G^{rd}_{ij}$ is avg. read density for gene $i$ in condition $j$, $S^{c}_{ik}$
+is gene count for gene $i$ in sample $k$, $S^{rd}_{ik}$ is read density for
+gene $i$ in sample $k$. $K_j$ is the set of samples corresponding to condition $j$.
+
+Gene $i$ is considered expressed if any of the corresponding $\hat G^{c}_{ij}$
+and $\hat G^{rd}_{ij}$ values are equal or greater than a minimum cutoff (by 
+default, these numbers are 10 for gene count and 0.05 for read density) and for
+any condition $j$.
+
+Differential gene expression is estimated with edgeR \cite{Robinson2012} 
+package using an exact test (for paired comparison) or generalized linear model
+(GLM) for more complex designs. For each gene \textbf{logFC}, \textbf{pvalue},
+and \textbf{adjusted  pvalue} by false discovery rate \cite{fdr} are reported. 
+
+\texttt{DUreport} and \texttt{DUreportBinSplice} methods perform genes DE
+analysis with the same methodology and gives the same results.
+
+
+\subsubsection{Differential bin usage (DU)}
 In order to select informative events the following criteria are adopted:
   
 \begin{itemize}
@@ -670,6 +832,9 @@ genesde <- genesDE(du)
 binsdu <- binsDU(du)
 junctionsdu <- junctionsDU(du)
 @
+
+\subsubsection{Differential junction usage (DU)}
+
 
 \subsection{Output and results} \label{sec:output}
 At each module, results are stored in \texttt{ASpliObjects}. Self-explanatory tables can be exported at each step of the analysis. Using \texttt{write} functions, it is possible to export tab delimited tables in a features-level output folder, as was detailed before:
