@@ -25,19 +25,26 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.76313213"
-     inkscape:cx="546.09368"
-     inkscape:cy="770.7515"
+     inkscape:zoom="0.5396159"
+     inkscape:cx="440.73483"
+     inkscape:cy="709.92774"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
      showguides="false"
      inkscape:guide-bbox="true"
-     inkscape:window-width="1920"
-     inkscape:window-height="1014"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
-     inkscape:window-maximized="1" />
+     inkscape:window-width="1366"
+     inkscape:window-height="705"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:snap-bbox="true"
+     inkscape:bbox-paths="true"
+     inkscape:bbox-nodes="true"
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:object-paths="true"
+     inkscape:snap-intersection-paths="true" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -46,7 +53,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -470,8 +477,8 @@
        id="path5226"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.40000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.20000009, 3.20000009;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 67.996027,52.34524 v 61.25417"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.40000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.20000007, 3.20000007;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 67.996027,52.34524 v 88.08737"
        id="path5226-4"
        inkscape:connector-curvature="0" />
     <path
@@ -485,8 +492,8 @@
        id="path5226-2"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.40000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.20000002, 3.20000002;stroke-dashoffset:0;stroke-opacity:1"
-       d="M 157.99603,52.345238 V 116.67472"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.40000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.20000008, 3.20000008;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 157.99603,52.345241 V 136.51008"
        id="path5226-0"
        inkscape:connector-curvature="0" />
     <path
@@ -494,5 +501,35 @@
        d="M 187.99603,52.345238 V 103.43613"
        id="path5226-6"
        inkscape:connector-curvature="0" />
+    <rect
+       style="fill:#ececec;fill-opacity:1;stroke:#000000;stroke-width:0.49999997;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect10-5-9-8-3-5"
+       width="90"
+       height="5.5"
+       x="67.996025"
+       y="136.51007" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:4.98056793px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="108.00252"
+       y="142.2507"
+       id="text3844-0-2-6-69-5-4-5"
+       transform="scale(1.0084389,0.99163171)"><tspan
+         sodipodi:role="line"
+         id="tspan3842-63-0-1-3-2-4-4"
+         x="108.00252"
+         y="142.2507"
+         style="font-size:4.98056793px;stroke-width:0.26458332px">Io1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:6.3499999px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="-52.266502"
+       y="141.0336"
+       id="text3844-2-1-8-4"><tspan
+         sodipodi:role="line"
+         x="-52.266502"
+         y="141.0336"
+         style="font-size:6.3499999px;stroke-width:0.26458332px"
+         id="tspan3882-4-3">intron original bin</tspan></text>
   </g>
 </svg>

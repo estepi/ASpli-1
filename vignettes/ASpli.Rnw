@@ -111,7 +111,7 @@ ASpli provides a single or few functions to use:
 \end{enumerate}
 
 At each step it is possible to export results in a friendly manner. 
-See Section "3.5 Outputs and results" for more details.
+See Section \ref{sec:output}:\nameref{sec:output} for more details.
 
 ASpli defines four major objects used to store data and perform operations
 ralated to a single task. Throughout this vignette each of these will be
@@ -135,7 +135,6 @@ generate each kind of object. }
 \end{figure}
 
 \subsection{ To BIN or not to BIN }
-% Agregar que se pueden poner los simbolos de los genes al memento de usar binGenome
 % Agregar definicion de los bins Io
 \label{sec:binDefinition}
 Sub-genic features such as exons and introns are analyzed using existing
@@ -146,7 +145,11 @@ multi-exonic genes are saved for further evaluation. When more than one isoform
 exists, some exons and introns will overlap. Exons and introns are then 
 subdivided into new features called exon and intron bins, and are then 
 classified into exclusively exonic bins, exclusively intronic bins, or 
-alternative splicing (AS) bins (See Figure \ref{fig:binDefinition}).
+alternative splicing (AS) bins (See Figure \ref{fig:binDefinition}). 
+In addition to these non overlapping bins, an additional type of bin is also
+defined. The latter corresponds to full introns extracted from annotation,
+before they are splitted by the presence of overlapping exons in another
+isoform. These bins as referred as \texttt{Intron original} bins.
 
 \begin{figure}[ht!]
 \centering
@@ -208,7 +211,8 @@ Subgenic features are named as follow for a hypothetical gene named GeneAAA:
 \begin{itemize}
   \item \textbf{GeneAAA:E001}: defines first exonic bin
   \item \textbf{GeneAAA:I001}: defines first intronic bin
-  \item \textbf{GeneAAA:Io001}: defines first original intron before being divided
+  \item \textbf{GeneAAA:Io001}: defines first \texttt{Intron original} before 
+  being divided
   \item \textbf{GeneAAA:J001}: defines first junction
 \end{itemize}
 
@@ -221,16 +225,22 @@ All tasks presented in this section, subgenic splitting of genes into
 bins, coordinates extraction of junctions, genes and bins, naming of genes and
 bins and splicing event assignation to bins are performed by single method
 : \texttt{binGenome}. The result is an object of class \texttt{ASpliFeatures}.
-Then, features cordinates could be obtained using their accesors.
-\texttt{ featuresg } returns coordinates for genes as a GRangesList object,
-\texttt{ featuresb } and \texttt{ featuresj } returns coordinates for bins and
-bins respectively as a GRanges object. GRangesList and GRanges are objects
-defined in GenomicRanges package. These objects contains aditional information
-stored as metadata and can be accessed with \texttt{mcols} function.
+\texttt{binGenome} methods accepts and additional optional argument
+\texttt{geneSymbols} used to assign symbols (i.e. common name or a short
+description) to genes.
+Then, features cordinates could be obtained using their accesors methods.
+Method \texttt{ featuresg } returns coordinates for genes as a GRangesList
+object, and methods \texttt{ featuresb } and \texttt{ featuresj } returns
+coordinates for bins and bins respectively as a GRanges object. GRangesList an
+GRanges are objects defined in GenomicRanges package. These objects contains
+aditional information stored as metadata and can be accessed with \texttt{mcols}
+function.
 
 <<binGenome, echo=TRUE, eval=FALSE>>=
-# Accesors of ASpliFeatures object 
+# extract features from annotation
 features      <- binGenome( aTxDb ) 
+
+# Accesors of ASpliFeatures object 
 geneCoord     <- featuresg( features )
 binCoord      <- featuresb( features )
 junctionCoord <- featuresj( features )
@@ -239,15 +249,21 @@ junctionCoord <- featuresj( features )
 binMetadata   <- mcols( binCoord )
 @
 
-
+<<binGenome, echo=TRUE, eval=FALSE>>=
+# extract features and map symbols to genes
+symbols       <- data.frame( row.names = genes( aTxDb ), 
+                             symbol = paste( 'This is symbol of gene:',
+                                             genes( aTxDb ) ) ) )
+features      <- binGenome( aTxDb, geneSymbols = symbols ) 
+<<binGenome, echo=TRUE, eval=FALSE>>=
 
 \subsection{ Defining the targets }
 \label{sec:targetsDef}
 
-Before to proceed with the counting of aligned reads to each feature is required
+Before to proceed with counting of aligned reads by feature, is required
 to define the samples, the experimental factors and to associate them with the
 corresponding genomic alignment files. This must be specified in a 
-\texttt{data.frame} that has as many row as sample. Each row name is the name
+\texttt{data.frame} that has as many rows as samples. Each row name is the name
 of a sample. The first column must be named \texttt{bam} and contain the path to
 a single bam file. The remaining columns are used to define the experimental
 factors for each sample and must have a proper name. This \texttt{data.frame} is
@@ -265,7 +281,7 @@ targets <- data.frame( row.names =  c("CT_rep1","CT_rep2", "Mut_rep1", "Mut_rep2
                        stringsAsFactors = FALSE )
 @ 
 
-More sofisticated designs, should be specified as follow, For example: for a two
+More sofisticated designs should be specified as follow. For example: for a two
 factor experiment with 2 replicates for each condition (Control, Mutant, Time1,
 Time2).
 
@@ -297,7 +313,6 @@ consulted using the \texttt{getConditions} function.
 getConditions( targets_2 )
 @
 
-
 \subsection{ Read Counting }
 
 \subsubsection{ Mapping file and bam loading } 
@@ -311,7 +326,7 @@ are loaded and stored as a named list of \texttt{GAlignments} objects.
 bam <- loadBAM(targets)
 @
 
-\subsubsection{ Overlap features and read alignments } 
+\subsubsection{ Counting alignment reads overlapping features } 
 
 Using the method \texttt{readCounts}, read alignments are overlaid on features.
 Results are stored into an \texttt{ASpliCounts} object. Read densities are
@@ -378,8 +393,9 @@ writeCounts(counts=counts, output.dir = "example")
 writeRds(counts=counts, output.dir = "example")
 @
 
-\label{sec:intronFlanking}
+
 \subsubsection{ Counting intron flanking regions }
+\label{sec:intronFlanking}
 
 Every intron is considered as a potential retained intron. Analysis of putative
 IR events consider adjacent 5' and 3' exons (E1 and E2, respectively) and the
@@ -412,14 +428,15 @@ In order to estimate read densities, an effective length (sum of the length of
 exonic bins (constitutive and alternative of their corresponding gene) is
 considered.
 
-The minimum overlap lenght between read and feature is 1. Hence, some reads
+The minimum overlap length between read and feature is 1. Hence, some reads
 might overlap to more than one bin  and could be counted several times.
 
 Junctions are extracted from BAM files. They are defined as those reads
-aligned skipping region from the reference (N operation in the CIGAR). They are
-essential for alternative splicing event quantification and discovery. Junction 
-alignment quality/confidence is extremely importat and it should be controlled 
-at the moment of the alignment step.
+aligned skipping region from the reference (N operator of CIGAR notation
+for aligned reads \cite{pmid19505943} ). They are essential for alternative
+splicing event quantification and discovery. Junction alignment
+quality/confidence is extremely important and it should be controlled at the
+moment of the alignment step.
 
 \subsubsection{ Contents of ASpliCounts object }
 Accessor methods of \texttt{ ASpliCounts } object return \texttt{data.frame}
@@ -515,41 +532,53 @@ each experimental sample. A more detailed overview is shown below:
 
 \subsection{ Alternative splicing analysis and discovery using junction }
 
-Using the obtained count tables at bin and junction level it is possible to get
-an integrative view of the AS events under analysis. The function 
-\texttt{AsDiscover} will produce an \texttt{ASpliAS} object containing several
-comprehensive tables, which could be accesed through their corresponding accesors.
+Count data of bins and junctions, generated with \texttt{readCounts} method, can
+be used to get an integrative view of the alternative splicing events. The 
+method \texttt{AsDiscover} will produce an \texttt{ASpliAS} object containing
+comprehensive results of evidence of alternative splicing usage of bins and
+junctions. 
 
-<<AsDiscover, echo=TRUE, eval=FALSE>>=
-as <- AsDiscover(counts, targets, features, bam, readLength=100L, threshold = 5)
-@
+The analysis will consider junctions that are completely included within a
+unique gene and have more than a minimum number of reads supporting them, by
+default this number is five.
 
-
-The analysis will consider junctions that:
-\begin{itemize}
-\item Are completely included into a unique gene (i.e. they are not multiple
-hit) \item Have more than a minimum number of reads supporting them (parameter
-\texttt{threshold, default=5})
-\end{itemize}
-
-To provide  an integrative view of the AS events being analyzed, splice junction
-information is used to analyze differential bin usage. PSI (percent of
-inclusion) and PIR (percent of intron retention) metrics, which are extensively
-used to quantify AS \cite{pmid21057496}, are calculated.  (see Figure 3) In the
-case of exonic bins, PSI values are computed using junctions that share start or
-end positions and fully span the exon. In  the case of intronic bins, the PIR
-metric is computed using junctions that share start and end with each intronic
-bin, and read counts in regions spanning the intron/exon boundary. This
-information allows the user to obtain reliable information on the relative
-abundance of the AS event being evaluated. Both metrics strongly enrich the
-count-centric analysis and provide independent experimental support for the
-existence of novel AS events, based on the identification of corresponding
-changes in nearby splice junctions.
-
-For each experimental junction identified, it is also reported if it is new and
-which bins are spanned. In addition, it is stated if the junction is completely
+For each experimental junction identified, it is also reported if it is novel
+and which bins are spanned. In addition, it is stated if the junction is completely
 included in an annotated bin, which would indicate that the AS event is a
 possible exintron \cite{pmid25934563}.
+
+<<AsDiscover, echo=TRUE, eval=FALSE>>=
+as <- AsDiscover( counts, targets, features, bam, readLength=100L, threshold =
+5)
+@
+Where the accepted parameters are:
+\begin{itemize}
+  \item \texttt{counts}: An ASpliCount object.
+  \item \texttt{targets}: A \textbf{targets} \texttt{data.frame} as defined in
+section \nameref{sec:targetsDef}.  
+  \item \texttt{features}: An ASpliFeatures object. 
+  \item \texttt{bam}: A list of \texttt{GAlignments} generated with loadBAM
+\texttt{function}.
+  \item \texttt{readLength}: Read length of sequenced library 
+  \item \texttt{threshold}: minimum number of reads supporting a junction.
+  \item \texttt{cores}: Number of proccessor cores used to speed up the
+computation.
+\end{itemize}
+
+\subsubsection{ PIR and PSI metrics } \label{sec:psir}
+To provide an integrative view of the AS events being analyzed, splice junction
+information is used to analyze differential bin usage. PSI (percent of
+inclusion) and PIR (percent of intron retention) metrics, which are extensively
+used to quantify AS \cite{pmid21057496}, are calculated. (see figure
+\ref{fig:psirEq} ) In the case of exonic bins, PSI values are computed using
+junctions that share start or end positions and fully span the exon. In  the
+case of intronic bins, the PIR metric is computed using junctions that share 
+start and end with each intronic bin, and read counts in regions spanning the 
+intron/exon boundary. This information allows the user to obtain reliable 
+information on the relative abundance of the AS event being evaluated. Both 
+metrics strongly enrich the count-centric analysis and provide independent 
+experimental support for the existence of novel AS events, based on the 
+identification of corresponding changes in nearby splice junctions.
 
 In addition, it is also possible to access and export tables:
 <<writeAS, echo=TRUE, eval=FALSE>>=
@@ -562,8 +591,7 @@ junctionsPSI <- junctionsPSI(as)
 writeAS(as=as, output.dir="example")
 @
 
-
-\textbf{New splicing events discovery} \\
+\subsubsection{New splicing events discovery} 
 ASpli allows novel AS events to be identified based on the splice junction
 repertoire. A novel AS event is identified whenever a novel splice junction that
 shares its beginning or end with another splice junction is discovered. When a
@@ -580,19 +608,22 @@ different experimental conditions are original functions of the package.
       \caption{PSI metric for AltSS estimation and its relationship with junctions}
     \end{subfigure}
 
-\begin{subfigure}[t]{1\textwidth}
-\centering
-\includegraphics[width=0.5\textwidth]{psi_es.png}
-\caption{PSI metric for ES estimation and its relationship with junctions}
-\end{subfigure}
-
-\begin{subfigure}[t]{1\textwidth}
-\centering
-\includegraphics[width=0.5\textwidth]{pir.png}
-\caption{PIR metric for IR estimation and its relationship with junctions}
-\end{subfigure}
-\caption{PSI and PIR metrics estimation and their relationship with junctions}
+    \begin{subfigure}[t]{1\textwidth}
+    \centering
+    \includegraphics[width=0.5\textwidth]{psi_es.png}
+    \caption{PSI metric for ES estimation and its relationship with junctions}
+    \end{subfigure}
+    
+    \begin{subfigure}[t]{1\textwidth}
+    \centering
+    \includegraphics[width=0.5\textwidth]{pir.png}
+    \caption{PIR metric for IR estimation and its relationship with junctions}
+    \end{subfigure}
+    \label{fig:psirEq}
+    \caption{PSI and PIR metrics estimation and their relationship with junctions}
 \end{figure*}
+
+\subsubsection{Contents of ASpliAS object}
 
 \subsection{Estimating differential gene expression and bin/junction usage}
 
@@ -640,7 +671,7 @@ binsdu <- binsDU(du)
 junctionsdu <- junctionsDU(du)
 @
 
-\subsection{Output and results}
+\subsection{Output and results} \label{sec:output}
 At each module, results are stored in \texttt{ASpliObjects}. Self-explanatory tables can be exported at each step of the analysis. Using \texttt{write} functions, it is possible to export tab delimited tables in a features-level output folder, as was detailed before:
 
 <<write, echo=TRUE, eval=FALSE>>=
