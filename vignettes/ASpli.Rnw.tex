@@ -591,7 +591,18 @@ To provide an integrative view of the AS events being analyzed, splice junction
 information is used to analyze differential bin usage. PSI (percent of
 inclusion) and PIR (percent of intron retention) metrics, which are extensively
 used to quantify AS \cite{pmid21057496}, are calculated (see figure
-\ref{fig:pirEq} ) for bins junctions. 
+\ref{fig:pirEq} ) for bins junctions. Only junctions that pass an abundance
+filter are considered for PSI/PIR calculation. The minimum value of
+counts for a given junctions and condition is calculated:
+
+\begin{equation}
+  J^{min}_{ij} = min( J_{ij} )
+\end{equation}
+Where $J^{min}_{ij}$ is the minimum value count for junction $i$ in condition
+$j$, and $J_{ij}$ is the set of junction supporting reads count values for
+junction $i$ in condition $j$. Then, a junction $i$ is kept if $J^{min}_{ij}$ is 
+greater or equal than a threshold value for at least one condition $j$.
+
 
 \begin{figure}[ht!]
     \begin{subfigure}[t]{1\textwidth}
