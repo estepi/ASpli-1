@@ -375,32 +375,7 @@
     filterefDF <- df0[ rowSums( list ) == length( contrastedConditions ) , ]
   }
   
-  justTwoConditions <- sum( contrast != 0 ) == 2
-  
-  if( justTwoConditions & ! forceGLM ){
-    capture.output( er   <- estimateDisp( er ) )
-    pair <- which( contrast != 0 )
-    et   <- exactTest(er, pair=pair)
-  } else {
-    design <- model.matrix( ~0 + group, data = er$samples )
-    captured <- capture.output(
-      er     <- estimateDisp( er, design = design )
-    )
-    glf    <- glmFit( er, design = design)  
-    et     <- glmLRT( glf, contrast = contrast)
-  } 
-  
-  fdr.gen <- p.adjust( et$table$PValue, method="BH" )
-  
-  cols <- match(rownames( targets ), colnames( df ) )
-  geneData <- .extractDataColumns( df, targets )
-  genesFull <- data.frame( geneData ,
-      logFC = as.numeric( et$table$logFC ), 
-      pvalue = as.numeric( et$table$PValue ), 
-      gen.fdr = as.numeric(fdr.gen), 
-      stringsAsFactors = FALSE)
-  rownames( genesFull ) <- rownames( df )
-  return( genesFull )
+  return (filterefDF)
 }
 
 

@@ -492,7 +492,7 @@ setGeneric (
         minBinReads  = 5,
         minRds = 0.05,
         offset = FALSE,
-        offsetAggregateMode = c( "geneMode", "binMode" )[2],
+        offsetAggregateMode = c( "geneMode", "binMode" )[1],
         offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE,
@@ -516,7 +516,7 @@ setMethod(
       minBinReads  = 5,
       minRds = 0.05,
       offset = FALSE,
-      offsetAggregateMode = c( "geneMode", "binMode" )[2],
+      offsetAggregateMode = c( "geneMode", "binMode" )[1],
       offsetUseFitGeneX = TRUE,
       contrast = NULL,
       forceGLM = FALSE,
@@ -693,6 +693,30 @@ setMethod( f = 'mergeBinDUAS',
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
+# Filter ASpliCounts by reads counts and read densisty
+#setGeneric( name = 'filterReadCounts',
+#    def = function (counts) standardGeneric( 'filterReadCounts') )
+#
+#
+#
+#setMethod( f = 'filterReadCounts',
+#    signature = 'ASpliCounts',
+#    definition = function( counts, targets, minGenRead = 10, minRdReads= 0.05,
+#        types = c( 'minByGeneSet', 'minByGeneCondition', 'avgByGeneCondition') ) )
+
+# filtering parameters
+# ------------------------------------------------ #
+# quantifier | grouping | what   | whom  | filter  #
+# ------------------------------------------------ #
+# min        | set      | count  | gene  | all     #
+# avg        | cond.    | r.d    | bin   | any     #
+#            |          |        | junc. |         #
+# -------------------------------------------------#
+
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
 # plotBins
 setGeneric( name = "plotBins",
     def = function(
@@ -751,6 +775,9 @@ setMethod(
     } 
 )
 # ---------------------------------------------------------------------------- # 
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # plotGenomicRegions
