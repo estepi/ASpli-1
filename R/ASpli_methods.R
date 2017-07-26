@@ -709,7 +709,7 @@ setMethod( f = 'mergeBinDUAS',
 # quantifier | grouping | what   | whom  | filter  #
 # ------------------------------------------------ #
 # min        | set      | count  | gene  | all     #
-# avg        | cond.    | r.d    | bin   | any     #
+# avg        | cond.    | rd     | bin   | any     #
 #            |          |        | junc. |         #
 # -------------------------------------------------#
 
