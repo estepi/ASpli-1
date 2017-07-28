@@ -781,14 +781,11 @@ methods \texttt{genesDE}, \texttt{binsDU} and \texttt{junctionDU}
 respectively. Also, can be exported as text files tables using \texttt{writeDU}
 function.
 
-%<<group, eval=FALSE, echo=TRUE>>=
-%du <- DUreport(counts, targets)
-%@
+\subsubsection{ Differential gene expression (DE)}
+\label{sec:de}
 
-\subsubsection{Differential gene expression (DE)}
-
-The first step of the genes DE analysis pipeline is the selection of those
-annotated genes that are considered to be expressed, at least that can be
+The first step of the gene DE analysis pipeline is the selection of those
+annotated genes that are considered to be expressed, or at least that can be
 confidently detected. For this, the average number of reads for each gene
 and condition and the average read density for each gene and condition are
 calculated as shown below:
@@ -815,37 +812,368 @@ package using an exact test (for paired comparison) or generalized linear model
 and \textbf{adjusted  pvalue} by false discovery rate \cite{fdr} are reported. 
 
 \texttt{DUreport} and \texttt{DUreportBinSplice} methods perform genes DE
-analysis with the same methodology and gives the same results.
+analysis with the same methodology and gives the same results. 
 
+Each condition in the analysis is weighted by contrast vector that ultimately
+defines the comparison that will be done. For a simple pair comparison between
+\texttt{Control} and \texttt{Trat} conditions, represeted as $Trat - Control$ 
+can be expressed as:
 
-\subsubsection{Differential bin usage (DU)}
-In order to select informative events the following criteria are adopted:
-  
-\begin{itemize}
-\item \textbf{Junctions}: junctions from expressed genes will be taken into account if they have more reads than a threshold supporting them (parameter \texttt{threshold}, default=5) in one of the conditions. 
-\end{itemize}
-
-Where differential junction and bin usage are estimated using the statistical method proposed in the \texttt{edgeR} package, external bins are not included in the analysis (parameter \texttt{ignoreExternal}=TRUE, by default). 
-and bin and junction counts are corrected as follow:
-
-Given a \textit{Bin$_i$} belonging to a \textit{Gene$_A$} in condition 1, \textit{Bin$_i$} counts ({G$_A$:B$_i$}) are divided by \textit{Gene$_A$} counts in condition 1 and multiplied by the gene count  average observed along all conditions \~G$_A$
-
-average \textit{Gene counts} in all conditions:
-
-	\[ CountBinAdjusted=(\frac{G_A:B_i}{G_A})_1 * \tilde G_A \]
-
-
-Output tables can be accessed and exported easily:
- 
-<<export, echo=TRUE, eval=FALSE>>=
-writeDU(du, output.dir="example")
-genesde <- genesDE(du)
-binsdu <- binsDU(du)
-junctionsdu <- junctionsDU(du)
+<<<export, echo=TRUE, eval=FALSE>>=
+contrast <- c( -1, 1 ) 
 @
 
-\subsubsection{Differential junction usage (DU)}
+Assuming that the order of the conditions given by \texttt{getConditions}
+methods is \texttt{ [ 'Control', 'Trat' ]}. 
 
+%The statistical computation is delegated in \texttt{egdeR} package capabilities.
+%It offers an exact test to compute p-values when comparing two conditions, and
+%fitting a generalized linear model for designs involving more conditions. ASpli
+%selects the appropiate methodoly for the analysis in a transparent way without
+%requiring the user to know the details.
+
+
+\subsubsection{Differential bin and junction usage (DU)}
+\label{sec:du}
+
+Bins and junctions are treated similarly for DU analysis. 
+In order to select informative events, will be taken into account bins and
+junctions from expressed genes (see section \secref{sec:de}) if they have more
+reads than a threshold (five reads by default) supporting them in at least one of the 
+conditions. 
+
+External bins do not participate in alternative splicing, therefore are usually
+excluded from the analysis. However, a external bin in one isoform can overlap
+to a non external bin in other isoform that can participate in alternative
+splicing regulation. ASpli, allows to optionally include the external bins in
+the analysis. Also, original intron bins can be optionally excluded. The
+inclusion of those bins can affect the estimation of corrected p-values (fdr).
+The information provided by intron original bins are highly correlated
+with the one of their sub bins, and increase largely the number of
+events to be analyzed. Therefore the fdr correction is more strict. Also, there
+is a violation on the fdr correction assupmtion that all individual tests are
+independent from each other. If a intron original bin show a significant change,
+there is a very high chance that at least one of their sub bins also shows a
+significant change.
+
+Differential bin/junction usage are estimated using the statistical methodology
+proposed in the \texttt{edgeR} package. Read counts from bins/junctions can not
+be used naively for differential usage analysis. Counts needs to be adjusted
+to remove the signal from changes in gene expression. To perform this, Aspli 
+provides three alternatives: 
+
+\begin{enumerate}
+   \item Adjust bin/junction counts to gene counts
+   \item Use an offset value given by gene expression
+   \item Delegate differential bin usage estimation to \texttt{edgeR}'s 
+         \texttt{ diffSpliceDGE }. This is available only for bins.
+\end{enumerate}
+
+The adjustment of bin counts to gene counts is performed by transforming the
+raw bin counts. The transformation is done by:
+
+\begin{equation}
+  B^{A}_{ijk} = \frac{ B_{ijk} \times \bar{G_{j}} } { G_{jk} }
+\end{equation}
+
+Where $B^{A}_{ijk}$ is the adjusted bin count for bin $i$ of gene $j$ in sample
+$k$, $B_{ijk}$ is the raw bin count for bin $i$ of gene $j$ in sample $k$, 
+$\bar{G_{j}}$ is the mean raw count for gene $j$ for all samples and $G_{jk}$ is
+the raw gene count for gene $j$ in sample $k$.
+
+Then the adjusted bin counts are used as input for an statical analysis
+identical to the one performed on genes using the methods provided by edgeR
+package.
+
+The offset methodology consist in define a vector that reflects the change of
+gene expression levels and use it to correct the observed change in bin usage
+in the statistical analysis.
+The are several ways to estimate the offset vector:
+
+\begin{itemize}
+  \item Use gene counts (gene mode):
+  \begin{enumerate}
+     \item Use only raw counts.
+     \item Fit a generalized linear model from gen counts.	
+  \end{enumerate}
+  \item Use the sum of exonic bins from each gene (bin mode). Is important to
+  note that in this mode some reads are counted more than one time, because the
+  overlap more than one bin. This mode is not available for junctions.
+\end{itemize}
+
+EdgeR package also provides a separate framework to detect splicing events, this
+rely on their \texttt{diffSpliceDGE} method. This method uses an strategy
+similar to the offset methodology. ASpli allow its use with the method
+\texttt{DUreportBinSplice}.
+
+%<<export, echo=TRUE, eval=FALSE>>=
+%writeDU(du, output.dir="example")
+%genesde <- genesDE(du)
+%binsdu <- binsDU(du)
+%junctionsdu <- junctionsDU(du)
+%@
+
+\subsubsection{ Usage of \texttt{DUreport}, \texttt{DUreportBinSplice} and
+\texttt{junctionDUreport} methods }
+
+\texttt{DUreport} method performs DE estimation for genes and DU estimation for
+bins in the same run. The call of this method is done by:
+
+<<write, echo=TRUE, eval=FALSE>>=
+du <- DUreport( counts,
+                targets,
+                minGenReads = 10, 
+                minBinReads = 5,
+                minRds = 0.05, 
+                offset = FALSE, 
+                offsetAggregateMode =  c( "geneMode", "binMode" )[2],
+                offsetUseFitGeneX = TRUE,
+                contrast = NULL, 
+                forceGLM = FALSE, 
+                ignoreExternal = TRUE, 
+                ignoreIo = FALSE, 
+                ignoreI = FALSE,
+                filterWithConstrasted = FALSE,
+                verbose = FALSE )
+@
+
+Where the accepted parameters are:
+\begin{description}
+  \item[counts] an ASpliCounts object.
+  \item[targets] a targets data frame built as explained in 
+  \secref{sec:targetsDef}.
+  \item[minGenReads] minimum value for reads in any condition required for a
+  gene to be considered as expressed (see \secref{sec:de} ). The default value
+  is 10.
+  \item[minBinReads] minimum value for reads in any condition required for a
+  bin to be included in the analysis (see \secref{sec:du} ). The default value
+  is 5.
+  \item[minRds] minimum value for read density for genes and bins required to be
+  considered in the analysis. The default value is 0.05.
+  \item[offset] a logical value that indicates, if \texttt{TRUE}, that an offset
+  vector should be estimated and used in the analysis. If \texttt{FALSE}, bin
+  counts by gene counts adjustment is used instead. The default value is 
+  \texttt{FALSE} ( see \secref{sec:du} )
+  \item[offsetAggregateMode] a character value that specifies if gene mode or
+  bin mode of offset estimation should be used. It is only relevant when
+  \item[offset] argument is \texttt{TRUE} (see \secref{sec:du}). The default
+  value is \texttt{geneMode}.
+  \item[offsetUseFitGeneX] a logical value that indicates if
+  the offset vector should be computed using a GLM. This is only relevant when \texttt{offset}
+  argument is \texttt{TRUE} and \texttt{offsetAggregateMode} argument is
+  \texttt{geneMode} (see \secref{sec:du}). The default value is \texttt{TRUE}.
+  \item[contrast] is a vector representing the coefficients for each unique
+  condition in the analysis. They are assigned in the order given by
+  \texttt{getConditions} method (see \secref{sec:targetsDef}). The default value
+  is \texttt{NULL} which correspond to a vector with value -1 in the first
+  position, 1 in the second, and zero for the remaining positions. This is for
+  the paired comparison of the second condition versus the first condition.
+  \item[forceGLM] a logical value that indicates that fitting a GLM should be
+  used in the analysis for paired comparison, instead of an extact test (used
+  by default for this type of comparison). The default value if \texttt{FALSE}.
+  \item[ignoreExternal] a logical value indicating that external bins should
+  be ignored in the analysis. The default value is \texttt{TRUE}.
+  \item[ignoreIo] a logical value indicating that original intron bins should
+  be ignored in the analysis. The default value is \texttt{TRUE}.
+  \item[ignoreI] a logical value indicating that only exons should be included
+  in the analysis. The default value is \texttt{FALSE}.
+  \item[filterWithConstrasted] a logical value that specifies that gene and
+  bin filtering when more than two conditions are present, should be done only
+  with the data of those conditions and ignore the others. The default value
+  id \texttt{FALSE}, it is strongly recommended to do not change this value.
+  \item[verbose] a logical value that indicates that detailed information
+  about each step in the analysis will be presented to the user.
+  
+\end{description}
+
+
+\texttt{DUreportBinSplice} method performs DE estimation for genes and DU
+estimation for bins in the same run. The call of this method is done by:
+
+<<export, echo=TRUE, eval=FALSE >>=
+du <- DUreportBinSplice( counts, 
+                         targets, 
+                         minGenReads = 10, 
+                         minBinReads = 5,
+                         minRds = 0.05, 
+                         contrast = NULL, 
+                         forceGLM = FALSE, 
+                         ignoreExternal = TRUE, 
+                         ignoreIo = TRUE, 
+                         ignoreI = FALSE,
+                         filterWithContrasted = FALSE )
+@
+
+Where the accepted parameters are:
+\begin{description}
+  \item[counts] an ASpliCounts object.
+  \item[targets] a targets data frame built as explained in 
+  \secref{sec:targetsDef}.
+  \item[minGenReads] minimum value for reads in any condition required for a
+  gene to be considered as expressed (see \secref{sec:de} ). The default value
+  is 10.
+  \item[minBinReads] minimum value for reads in any condition required for a
+  bin to be included in the analysis (see \secref{sec:du} ). The default value
+  is 5.
+  \item[minRds] minimum value for read density for genes and bins required to be
+  considered in the analysis. The default value is 0.05.
+  \item[contrast] is a vector representing the coefficients for each unique
+  condition in the analysis. They are assigned in the order given by
+  \texttt{getConditions} method (see \secref{sec:targetsDef}). The default value
+  is \texttt{NULL} which correspond to a vector with value -1 in the first
+  position, 1 in the second, and zero for the remaining positions. This is for
+  the paired comparison of the second condition versus the first condition.
+  \item[forceGLM] a logical value that indicates that fitting a GLM should be
+  used in the analysis for paired comparison, instead of an extact test (used
+  by default for this type of comparison). The default value if \texttt{FALSE}.
+  \item[ignoreExternal] a logical value indicating that external bins should
+  be ignored in the analysis. The default value is \texttt{TRUE}.
+  \item[ignoreIo] a logical value indicating that original intron bins should
+  be ignored in the analysis. The default value is \texttt{TRUE}.
+  \item[ignoreI] a logical value indicating that only exons should be included
+  in the analysis. The default value is \texttt{FALSE}.
+  \item[filterWithConstrasted] a logical value that specifies that gene and
+  bin filtering when more than two conditions are present, should be done only
+  with the data of those conditions and ignore the others. The default value
+  id \texttt{FALSE}, it is strongly recommended to do not change this value.
+  
+\end{description}
+
+\texttt{junctionDUreport} method performs DU estimation for junctions. This is
+independent of the genes DE and bins DU analysis. However, the results can be
+merged with existing genes and bins results. The call of this method is done by:
+
+<<export, echo=TRUE, eval=FALSE >>=
+du <- junctionDUReport(  counts, 
+                         targets, 
+                         appendTo = NULL, 
+                         minGenReads = 10,
+                         minRds = 0.05,
+                         threshold = 5,
+                         offset   = FALSE,
+                         offsetUseFitGeneX = TRUE,
+                         contrast = NULL,
+                         forceGLM = FALSE )
+@
+
+Where the accepted parameters are:
+\begin{description}
+  \item[counts] an ASpliCounts object.
+  \item[targets] a targets data frame built as explained in 
+  \secref{sec:targetsDef}.
+  \item[appendTo] an ASpliDU object to which the results will be attached.
+  \item[minGenReads] minimum value for reads in any condition required for a
+  gene to be considered as expressed (see \secref{sec:de} ). The default value
+  is 10.
+  \item[minRds] minimum value for read density for genes required to be
+  considered as expressed. The default value is 0.05.
+  \item[threshold] minimum number of junction supporting reads required to be
+  present in at least one sample of every conditions in order to include the
+  junction in the analysis.
+  \item[offset] a logical value that indicates, if \texttt{TRUE}, that an offset
+  vector should be estimated and used in the analysis. If \texttt{FALSE},
+  junction counts by gene counts adjustment is used instead. The default value
+  is \texttt{FALSE} ( see \secref{sec:du} )
+  \item[offsetUseFitGeneX] a logical value that indicates if
+  the offset vector should be computed using a GLM. This is only relevant when \texttt{offset}
+  argument is \texttt{TRUE} (see \secref{sec:du}). The default value is \texttt{TRUE}.
+  \item[contrast] is a vector representing the coefficients for each unique
+  condition in the analysis. They are assigned in the order given by
+  \texttt{getConditions} method (see \secref{sec:targetsDef}). The default value
+  is \texttt{NULL} which correspond to a vector with value -1 in the first
+  position, 1 in the second, and zero for the remaining positions. This is for
+  the paired comparison of the second condition versus the first condition.
+  \item[forceGLM] a logical value that indicates that fitting a GLM should be
+  used in the analysis for paired comparison, instead of an extact test (used
+  by default for this type of comparison). The default value if \texttt{FALSE}.
+  
+\end{description}
+
+The three methods described above return an \texttt{ASpliDU} object. 
+This object contains the results for genes DE, bins DU and junction DU, which
+can be consulted through their respective accessor methods: \texttt{genesDE},
+\texttt{binsDU} and \texttt{junctionsDU}. See next section
+(\secref{sec:asplidu}) for details about the specific contents of the data
+obtained with these methods.
+
+\subsubsection{Contents of ASpliDU object}
+\label{sec:asplidu}
+
+ASpliDU accessor methods \texttt{genesDE}, \texttt{binsDU} and
+\texttt{junctionsDU} returns a \textt{data.frame} object with the corresponding
+results.
+
+\begin{itemize}
+  \item Results for genes differential expression analysis can be accessed with
+  \texttt{genesDE}. This method returns a \texttt{data.frame}
+  object which columns are specified below.
+    \begin{description}
+      \item[row.names] Bin name as is defined in \secref{sec:binNaming}.
+      \item[event] Splicing event asigned to the bin (see section
+      \ref{sec:binDefinition}:\nameref{sec:eventAssign})
+      \item[J1] The name of J1 junction or E/I flanking region.
+      \item[sample data for J1] J1 counts for each sample.
+      \item[J2] The name of J2 junction or E/I flanking region.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[J3] The name of J3 junction or E/I flanking region.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[PSI or PIR data] A column by condition with the corresponding PSI
+      variant metric or PIR metric.
+      \\
+    \end{description}
+  \item Results for experimental junctions assuming that they correspond to
+  introns involved in intron retention events can be accessed with
+  \texttt{junctionPIR} method. The returning value is a \texttt{data.frame} with
+  columns:
+    \begin{description}
+      \item[row.names] Junction name in format \texttt{chromosome.5'site-3'site}.
+      \item[hitIntron] The name of a bin that match exactly with positions of
+      the junction, if it exists.
+      \item[hitIntronEvent] If \texttt{hitIntron} is not empty, contains the
+      splicing event assigned to that bin.
+      \item[event] Splicing event asigned to the bin (see section
+      \ref{sec:binDefinition}:\nameref{sec:eventAssign})
+      \item[sample data for J1] J1 counts for each sample.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[PSI data] A column by condition with the corresponding PIR metric.
+      \\
+    \end{description}
+  \item Results for experimental junctions assuming that the bearing
+  exons are involved in alternative splice events can be accessed with
+  \texttt{junctionPSI} method. The returning value is a \texttt{data.frame} with
+  columns:
+    \begin{description}
+      \item[row.names] Junction name in format \texttt{chromosome.5'site-3'site}.
+      \item[junction] If junction coincides with a junction inferred
+      from the annotation, the name is shown as is given in section
+      \ref{sec:binDefinition}:\nameref{sec:binDefinition}, otherwise
+      contains \texttt{noHit}.
+      \item[gene] The name of the locus that contains the junction.
+      \item[strand] Sense strand of the gene.
+      \item[multipleHit] Contains \texttt{yes} if junction spans multiple
+      genes.
+      \item[symbol] An optional common name for the gene, that must be provided at
+      the moment of feature extraction (see section
+      \secref{sec:binDefinition}).
+      \item[gene\_coordinates] Show the genomic coordinates of the gene with
+      format \texttt{chromosome:start-end}.
+      \item[bin\_spanned] The names of the bins spanned by the junction.
+      \item[j\_within\_bin] If junction fall within a single bin, the name of
+      that bin is shown.
+      \item[sample data for J3] J3 counts for each sample.
+      \item[StartHit] The name of J1 junction.
+      \item[sample data for J1] J1 counts for each sample.
+      \item[PSI data] A column by condition with the PSI metric for J1. The name
+      of the column is the name of the condition with '.start' suffix.
+      \item[EndHit] The name of J2 junction.
+      \item[sample data for J2] J2 counts for each sample.
+      \item[PSI data] A column by condition with the PSI metric for J2. The name
+      of the column is the name of the condition with '.end' suffix.
+      \\
+    \end{description}  
+
+\end{itemize}
 
 \subsection{Output and results} \label{sec:output}
 At each module, results are stored in \texttt{ASpliObjects}. Self-explanatory tables can be exported at each step of the analysis. Using \texttt{write} functions, it is possible to export tab delimited tables in a features-level output folder, as was detailed before:
@@ -890,6 +1218,9 @@ Information summary reported in tables:
   \item \textbf{j\_within\_bin}: if junction is included  into a bin. This information is useful for the analysis of possible exintrons. 
 \end{itemize}
 \end{itemize} 
+
+
+
 %----------------------------------------%
 \subsubsection*{Junctions metadata:}
 The following junction dependant tables with their corresponding content are available (see Figure 3 a,b,c):
@@ -914,6 +1245,7 @@ The following junction dependant tables with their corresponding content are ava
 
 \item \textbf{junctions.psi}: Given a junction, we can analyze if it shares start, end or both with another junction. If so, it indicates the existance of an alternative splicing event. Using strand information it is possible to classify those junctions into ALt5'SS, ALt3'SS or ES. Ratio between them along samples is reported.
 \end{itemize}  
+
 
 
 \subsection{Plots}
@@ -942,6 +1274,8 @@ plotTopTags(auxdf,
             targetsPlot, 
             output.dir="testPlots")
 @
+
+\subsection{Utility functions}
 
 \section{Example data}
 It is possible to run a demo of \texttt{ASpli} using public RNA-seq data available via Bioconductor. It requieres installing of \texttt{RNAseqData.HNRNPC.bam.chr14} package and loading  an small TranscriptDb of Human Genome only for chromosome 14. This subset of reads is part of an experiment intended to analyze splicing factors and their relationship with exonization of Alu elements \cite{Zarnack2013453}. We load the package and the genome:
