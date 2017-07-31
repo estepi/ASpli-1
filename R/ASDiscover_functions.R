@@ -30,7 +30,7 @@
   # Iterates over conditions and over samples of each condition
   # uses filter matrix to compute partial min operations
   for ( i in 1:length( uniqueConditions ) ) {
-    byCond <- cropped[ , targets$condition == uniqueConditions[ i ] ]
+    byCond <- cropped[ , targets$condition == uniqueConditions[ i ] , drop = FALSE]
     for ( j in 1:ncol( byCond ) ) {
       filter[ , i ] <- vecMin( filter[ , i ] , byCond[ , j ]  )
     }

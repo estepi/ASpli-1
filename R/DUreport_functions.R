@@ -362,7 +362,7 @@
   list <- matrix( unlist(
           lapply( contrastedConditions , 
               function( x ) {
-                rowMeans( cropped[ , targets$condition == x ] ) >= min } )),  
+                rowMeans( cropped[ , targets$condition == x , drop = FALSE] ) >= min } )),  
       nrow = nrow( cropped ), 
       byrow = FALSE )
   
@@ -409,7 +409,7 @@
   avRdBin <- matrix( unlist(
           lapply( contrastedConditions , 
               function( x ) { 
-                rowMeans( bins.rd[ , targets$condition == x] ) 
+                rowMeans( bins.rd[ , targets$condition == x, drop = FALSE] ) 
               } ) ),  
       nrow = nrow( bins.rd ), 
       byrow = FALSE) 
@@ -420,7 +420,7 @@
   # TODO: vectorize this code
   avRdGen <- matrix( unlist(
           lapply( contrastedConditions, 
-              function(x) rowMeans(genes.rd[ , targets$condition == x]))),  
+              function(x) rowMeans(genes.rd[ , targets$condition == x, drop = FALSE]))),  
       nrow = nrow(genes.rd), 
       byrow = FALSE)#Ok
   # -------------------------------------------------------------------------- #

@@ -12,18 +12,18 @@
 #            |          |        | junc. |         #
 # -------------------------------------------------#
 
-bamFileNames <- c( 
-    "A_C_0.bam", "A_C_1.bam", "A_C_2.bam", 
-    "A_D_0.bam", "A_D_1.bam", "A_D_2.bam",
-    "B_C_0.bam", "B_C_1.bam", "B_C_2.bam", 
-    "B_D_0.bam", "B_D_1.bam", "B_D_2.bam" )
-
-targets <- data.frame( 
-    row.names = sub( ".bam","",bamFileNames ),
-    bam = system.file( 'extdata', bamFileNames, package="ASpli" ),
-    factor1 = c( 'C','C','C','D','D','D','C','C','C','D','D','D'),
-    factor2 = c( 'A','A','A','A','A','A','B','B','B','B','B','B'),
-    stringsAsFactors = FALSE )
+#bamFileNames <- c( 
+#    "A_C_0.bam", "A_C_1.bam", "A_C_2.bam", 
+#    "A_D_0.bam", "A_D_1.bam", "A_D_2.bam",
+#    "B_C_0.bam", "B_C_1.bam", "B_C_2.bam", 
+#    "B_D_0.bam", "B_D_1.bam", "B_D_2.bam" )
+#
+#targets <- data.frame( 
+#    row.names = sub( ".bam","",bamFileNames ),
+#    bam = system.file( 'extdata', bamFileNames, package="ASpli" ),
+#    factor1 = c( 'C','C','C','D','D','D','C','C','C','D','D','D'),
+#    factor2 = c( 'A','A','A','A','A','A','B','B','B','B','B','B'),
+#    stringsAsFactors = FALSE )
 
 
 .vecMin <- function ( a, b ) {
@@ -47,6 +47,9 @@ targets <- data.frame(
 }
 
 .extractValuesToFilter <- function ( counts, type, what, targets ) {
+  
+  typeAcceptedValues <- c('count','rd')
+  whatAcceptedValues <- c('gene','bin','junction')
   
   if ( ! type %in% typeAcceptedValues || ! what %in% whatAcceptedValues ) {
     stop( simpleError( "Type or what argument has an unaccepted value.\nAccepted values are:\n\ttype: 'count','rd'\n\twhat: 'gene','bin','junction'") )
@@ -96,9 +99,9 @@ targets <- data.frame(
   
 }
 
-a <- .extractValuesToFilter( counts , type = 'count', 'gene', targets )
-b <- .evaluateByGrouping( a, 'min', 'set', targets ) 
-c1 <- .filterByGroup( b, 'any', 310 )
+#a <- .extractValuesToFilter( counts , type = 'count', 'gene', targets )
+#b <- .evaluateByGrouping( a, 'min', 'set', targets ) 
+#c1 <- .filterByGroup( b, 'any', 310 )
 
 .filterReadCounts <- function( counts, targets, cutoffValue, type=NULL, 
     quantifier=NULL, what= NULL, grouping = NULL, filter = NULL ) {
@@ -134,4 +137,4 @@ c1 <- .filterByGroup( b, 'any', 310 )
   return( counts )
 }
 
-a <- .filterReadCounts( counts, targets, 315, 'count', 'min', 'gene', 'cond', 'all' )
+#a <- .filterReadCounts( counts, targets, 315, 'count', 'min', 'gene', 'cond', 'all' )

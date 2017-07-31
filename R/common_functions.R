@@ -49,7 +49,7 @@
       ncol = nConditions )
   
   for( i in 1:nConditions ) {
-    result[ , i ] <- rowSums( countDf[ , targets$condition == uniqueConditions[i] ] )
+    result[ , i ] <- rowSums( countDf[ , targets$condition == uniqueConditions[i], drop = FALSE ] )
   }
   colnames( result ) <- uniqueConditions
   return ( result )
