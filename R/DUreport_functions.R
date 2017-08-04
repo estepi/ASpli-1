@@ -108,7 +108,7 @@
     mOffset <- NULL
   }
 
-  junctionsdeSUM <- ASpli:::.junctionsDU_SUM(
+  junctionsdeSUM <- .junctionsDU_SUM(
       df = df,
       dfGen = dfGen,
       targets = targets,

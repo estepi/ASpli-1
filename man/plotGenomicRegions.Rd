@@ -15,7 +15,7 @@
 }
 
 \usage{
-  plotGenomicRegions( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
+  plotGenomicRegions( features, x, genomeTxDb, targets, xIsBin = TRUE, 
     layout = 'auto', colors = 'auto', plotTitles = 'auto', sashimi = FALSE, 
     zoomOnBins = FALSE, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
     outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
@@ -25,6 +25,9 @@
 }
 
 \arguments{
+  \item{ features }{
+    An ASpliFeatures object, generated with \code{binGenoms} function.
+  }
   \item{ x }{ 
     A character vector with the names of bins or genes to plot. To plot into a
     window is recommended that the length of x be one.

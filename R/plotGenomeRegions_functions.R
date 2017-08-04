@@ -54,36 +54,42 @@
 }
 
 
-.definePlottingRegions <- function( counts, x, xIsBin, verbose ) {
+.definePlottingRegions <- function( x, xIsBin, verbose, features, genomeTxDb ) {
   
-  binCounts <-  countsb( counts )
-  geneCounts <- countsg( counts )
+  binFeatures  <- featuresb( features )
+  geneFeatures <- featuresg( features )
+#  geneCounts <- countsg( counts )
   
   if ( xIsBin ) {
     if (verbose) message( "Extracting gene regions of selected bins" )
-    selectedGenes <- unique( countsb( counts )[ rownames(  countsb( counts ) ) %in% x ,'locus'] )
+    selectedGenes <- unique( mcols(featuresb( features )[ names( featuresb( features ) ) %in% x ])[,'locus'] )
+    #selectedGenes <- unique( countsb( counts )[ rownames(  countsb( counts ) ) %in% x ,'locus'] )
   } else {
     if (verbose) message( "Extracting gene regions of selected genes" )
     selectedGenes <- x
   }
-  if ( length( genes ) > 0 ) {
+  if ( length( selectedGenes ) > 0 ) {
+   
+#    geneCoordinates <- ranges( geneFeatures[ selectedGenes ] )
+#    
+#    geneCoordinates <- geneCounts [ selectedGenes, 'gene_coordinates', drop = FALSE ]
+#    
+#    geneCoordinates <- as.character( geneCoordinates[ 
+#            !duplicated( geneCoordinates), 1 ] )
+#    geneCoordinates <- strsplit( geneCoordinates, '[-:]')
+#    geneCoordinates <- do.call( rbind , geneCoordinates )
+#    geneCoordinates <- data.frame(geneCoordinates, stringsAsFactors = FALSE)
+#    
+#    geneCoordinates[,2] <- as.integer( geneCoordinates[,2] )
+#    geneCoordinates[,3] <- as.integer( geneCoordinates[,3] )
+#    
+#    regions <- GRanges( geneCoordinates[,1], 
+#        IRanges( geneCoordinates[,2] , geneCoordinates[,3]) , strand='+')
+#    
+#    names( regions ) <- selectedGenes
     
-    geneCoordinates <- geneCounts [ selectedGenes, 'gene_coordinates', drop = FALSE ]
-    
-    geneCoordinates <- as.character( geneCoordinates[ 
-            !duplicated( geneCoordinates), 1 ] )
-    geneCoordinates <- strsplit( geneCoordinates, '[-:]')
-    geneCoordinates <- do.call( rbind , geneCoordinates )
-    geneCoordinates <- data.frame(geneCoordinates, stringsAsFactors = FALSE)
-    
-    geneCoordinates[,2] <- as.integer( geneCoordinates[,2] )
-    geneCoordinates[,3] <- as.integer( geneCoordinates[,3] )
-    
-    regions <- GRanges( geneCoordinates[,1], 
-        IRanges( geneCoordinates[,2] , geneCoordinates[,3]) , strand='+')
-    
-    names( regions ) <- selectedGenes   
-    
+    regions <- genes(aTxDb)[ selectedGenes ]
+   
     return( regions )
     
   } else {
@@ -190,13 +196,13 @@
   return( result )
 }
 
-.plotGenomicRegions <- function( x, genomeTxDb, counts, targets, xIsBin = TRUE, 
+.plotGenomicRegions <- function( x, genomeTxDb, features, targets, xIsBin = TRUE, 
     layout = 'auto', colors = 'auto', plotTitles = 'auto', sashimi = FALSE, 
-    zoomOnBins = NULL, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
+    zoomOnBins = FALSE, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
     outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
     annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black',
     preMergedBAMs = NULL, useTransparency = TRUE, tempFolder = 'tmp', 
-    avoidReMergeBams= FALSE, verbose = TRUE ) {
+    avoidReMergeBams= FALSE, verbose = TRUE  ) {
   
   targets <- .condenseTargetsConditions( targets )
   
@@ -212,10 +218,12 @@
   # Keep existing genes and bins in the data set
   if ( xIsBin ) {
     if (verbose) message( "Selecting Bins" )
-    x <- x[ x %in% rownames( countsb( counts ) ) ]
+    #x <- x[ x %in% rownames( countsb( counts ) ) ]
+    x <- x[ x %in% names( featuresb( features ) ) ]
   } else {
     if (verbose) message( "Selecting Genes" )
-    x <- x[ x %in% rownames( countsg( counts ) ) ]
+    #x <- x[ x %in% rownames( countsg( counts ) ) ]
+    x <- x[ x %in% names( featuresg( features ) ) ]
   }
   if ( length( x ) == 0 ) {
     stop( simpleError( "Bin and/or genes names are incorrect." ) )
@@ -224,7 +232,7 @@
   
   # -------------------------------------------------------------------------- #
   # Collect and merge bam files
-  regions <- .definePlottingRegions( counts, x, xIsBin, verbose )
+  regions <- .definePlottingRegions( x, xIsBin, verbose, features, genomeTxDb )
   if ( is.null( preMergedBAMs) ) {
     if (verbose) message("Using selected regions to extract and merge reads")
     mergedFiles <- .mergeBamsByCondition( targets, regions, 
@@ -243,14 +251,20 @@
   plotCounter = 0
   for ( xi in x ) {
     plotCounter <- plotCounter +1 
-    currentGene <- if ( xIsBin ) countsb( counts )[ xi, c('locus') ] else xi
+    #currentGene <- if ( xIsBin ) countsb( counts )[ xi, c('locus') ] else xi
+    currentGene <- if ( xIsBin ) mcols(featuresb( features )[xi])[,'locus'] else xi
     highLightBin <- highLightBin & xIsBin
 
     zoomOnBins <- if ( ! zoomOnBins | ! xIsBin ) FALSE else  zoomOnBins 
     
     genLims <- c( start( regions[currentGene] ), end( regions[currentGene] ) )
-    binLims <- if ( xIsBin ) as.integer( countsb( counts )[ 
-                  xi, c( 'start', 'end' ) ] ) else NULL 
+#    binLims <- if ( xIsBin ) as.integer( countsb( counts )[ 
+#                  xi, c( 'start', 'end' ) ] ) else NULL 
+    binLims <- if ( xIsBin ) {
+          df <- as.data.frame( featuresb( features )[xi] )
+          rownames(df) <- df$names
+          c( df[1, 'start'], df[1,'end']) 
+        } else NULL
     
     if ( ! is.null( outfolder ) ) {
       dir.exists( outfolder ) || dir.create( outfolder )
@@ -336,7 +350,7 @@
     genLims <- as.integer( genLims )
   }
   # -------------------------------------------------------------------------- #
-  
+
   # -------------------------------------------------------------------------- #
   # Functions to define tracks
   alnTrack <- function( rangeFile, name, colors, size  ) {
@@ -363,12 +377,13 @@
         margin= 20
     )
   }
-  
+
   binHighLight <- function ( tracks ) {
     tracks <- tracks[ ! is.na (tracks )]
     colRGB <- if( useTransparency ) rgb(0.5,0.5,0.5, 0.3) else rgb(0.5,0.5,0.5) 
     fillRGB <- if( useTransparency ) rgb( 0.5,0.5,0.5,0.25) else rgb( 0.8,0.8,0.8 )   
     inBackGround <- ! useTransparency
+    
     HighlightTrack(
         trackList = tracks, 
         start = binLims[1], 
@@ -383,7 +398,7 @@
     )
   }
   # -------------------------------------------------------------------------- #
-  
+
   # -------------------------------------------------------------------------- #
   # Define tracks
   alntracks <- lapply(1:hplots, function ( y ) { lapply(1:vplots, function( z ) { NA } ) } )
@@ -413,11 +428,10 @@
       fill = annotationFill ,
       col = annotationCol,
       shape = "arrow",
-      col.title = annotationColTitle
-  )
+      col.title = annotationColTitle )
   # -------------------------------------------------------------------------- #
-  
-  
+
+
   
   if ( highLightBin ) {
     columnTracks <- lapply( alntracks, function (x) {
@@ -426,7 +440,7 @@
   } else {
     columnTracks <- alntracks
   }
-  
+
   
   # -------------------------------------------------------------------------- #
   # creates the graphic device
@@ -477,7 +491,8 @@
     }
   }
   # -------------------------------------------------------------------------- #
-  
+
+
   grid.newpage()
   
   pushViewport( 
@@ -492,6 +507,7 @@
   first <- TRUE
   for ( i in 1:hplots) {
     pushViewport(viewport(layout.pos.col=i, layout.pos.row=2))
+    
     plotTracks( c( columnTracks [[ i ]] ,geneAnnotationTrack ), 
         chromosome        = chromosome, 
         from              = genLims[1], 
@@ -515,3 +531,4 @@
   } 
   # -------------------------------------------------------------------------- #
 }
+

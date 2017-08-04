@@ -784,7 +784,8 @@ setMethod(
 setGeneric( 
     name = "plotGenomicRegions", 
     def = function( 
-        counts, 
+        #counts,
+        features,
         x, 
         genomeTxDb, 
         targets, 
@@ -807,13 +808,14 @@ setGeneric(
         useTransparency = FALSE,
         tempFolder = 'tmp',
         avoidReMergeBams = FALSE,
-        verbose = FALSE) standardGeneric( "plotGenomicRegions" ) )
+        verbose = FALSE ) standardGeneric( "plotGenomicRegions" ) )
 
 setMethod(
     f = "plotGenomicRegions",
-    signature = "ASpliCounts",
+    signature = "ASpliFeatures",
     definition = function ( 
-        counts, 
+#        counts,
+        features, 
         x, 
         genomeTxDb, 
         targets, 
@@ -836,12 +838,13 @@ setMethod(
         useTransparency = TRUE,
         tempFolder = 'tmp',
         avoidReMergeBams = FALSE,
-        verbose = FALSE) {
+        verbose = FALSE ) {
       
           .plotGenomicRegions(
               x, 
               genomeTxDb, 
-              counts, 
+#              counts,
+              features,
               targets, 
               xIsBin, 
               layout, 
