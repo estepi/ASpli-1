@@ -88,7 +88,7 @@
 #    
 #    names( regions ) <- selectedGenes
     
-    regions <- genes(aTxDb)[ selectedGenes ]
+    regions <- genes(genomeTxDb)[ selectedGenes ]
    
     return( regions )
     

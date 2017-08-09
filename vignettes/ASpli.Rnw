@@ -1436,14 +1436,13 @@ targets <- data.frame(
                  'D_T12.r1', 'D_T12.r2' ),
   bam = c( 'A_T1.r1.bam', 'A_T1.r2.bam', 
            'A_T2.r1.bam', 'A_T2.r2.bam',
-           ... , 
            'D_T12.r1.bam', 'D_T12.r2.bam' ),
   treat = c( 'A', 'A',
              'A', 'A',
              ... ,
              'D', 'D' ),
   time = c( 'T1', 'T1',
-            'T2', 'T2,
+            'T2', 'T2',
             ... ,
             'T12', 'T12' ),
   stringsAsFactors = FALSE )
@@ -1470,118 +1469,368 @@ plotbins(
 @
 
 Figures \ref{fig:plotbinEx1} and \ref{fig:plotbinEx2} shows the images that can
-be obtained in setups like shown in the examples above. Note that one image contains barplots, and the
-other contains lines, they are selected automatically according to the number of
-conditions and values per condition. However, it is possible to force to one of
-them.
+be obtained in setups like shown in the examples above. Note that one image 
+contains barplots, and the other contains lines, they are selected automatically
+according to the number of conditions and values per condition. However, it is 
+possible to force to one of them.
 
 \begin{figure}
-  \includegraphics[width=0.6\textwidth]{ }
-  \caption{}
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/GENE02_E002_pr.pdf}
+  \caption{Plots of bin gene, and junction counts, and PSI/PIR metric for a
+  single bin of an experiment containing a time course of 12 posints in four
+  conditions. Gene expression seem to be constant across all conditions,
+  however, the usage of the bin oscilates with time. Inclusion and
+  exclusion junctions show a concordant behaviour.}
   \label{fig:plotbinEx1} 
 \end{figure}
 
 \begin{figure}
-  \includegraphics[width=0.6\textwidth]{ }
-  \caption{}
+  \centering
+  \includegraphics[width=0.25\textwidth]{images/GENE02_E002b_pr.pdf}
+  \caption{Plots of bin gene, and junction counts, and PSI/PIR metric for a
+  single bin of an experiment containing two combinatorial factors. Of those,
+  only two conditions are shown. }
   \label{fig:plotbinEx2} 
 \end{figure}
 
 \subsection{Utility functions}
 
+ASpli includes many functions that help the use to manipulate and interrogate
+the different ASpli objects.
+
+\subsubsection{Consulting data in \texttt{ASpliDU} objects}
+
+ASpliDU objects can contain data for gene, bins and/or junctions depending on
+what function was used to create it. \texttt{DUreport} and
+\texttt{DUreportBinSplice} methods returns \texttt{ASpliDU} objects with data
+for gene and bins. \texttt{junctionDUreport} function returns an object with
+junction data only or with gene, bins and junction depending on the input.
+There are two function that are useful to know what kind of data an
+\texttt{ASpliDU} contains: \texttt{containsJunctions} and
+\texttt{containsGenesAndBins}. 
+
+<<containsDUfunctions, echo=TRUE, eval=FALSE>>=
+du <- aspliDUexample1()
+containsJunctions( du )
+containsGenesAndBins( du )
+@
+
+\subsubsection{Filtering \texttt{ASpliCount} objects}
+
+Genes, bins and junctions present in an \texttt{ASpliCount} object can be
+filtered by abundance according to several statments:
+\begin{itemize}
+  \item number of counts or read density.
+  \item mean value or minimum value.
+  \item grouping by condition or on the whole set.
+  \item all conditions must meet the selection criteria or at least one
+  condition must do it.
+\end{itemize}
+
+\texttt{filterReadCounts} method allow this filtering. Here there are some
+examples:
+
+%<<filterReadCounts, echo=TRUE, eval=FALSE>>=
+%filterReadCounts(du)
+%@
+
+\subsubsection{Filtering \texttt{ASpliDU} objects}
+Results present in \texttt{ASpliDU} can be filtered by \textbf{logFC} and
+\textbf{FDR} with \texttt{filterDU} function. Elements with and \textbf{FDR}
+value lower or equal to a given threshold, and with an absolute \textbf{logFC}
+greater or equal to a given value are kept. Default values for \textbf{logFC} and
+\textbf{FDR} threshold values are 0 and 1 respectively, in other words, is not
+filtered by that value.
+
+<<filterDU1, echo=TRUE, eval=FALSE>>=
+# Filter genes that changes at least a 50 percent their expression with a 
+# FDR value of 0.05 or less, and bins changes at least a 50 percent their expression with a 
+# FDR value of 0.05 
+du <- aspliDUexample1()
+duFilt <- filterDU(du, 'genes', '0.05', log(1.5,2))
+duFilt <- filterDU(duFilt, 'bins', '0.1', log(1.5,2))
+@
+
+It is possible to filter only those elements that has a positive
+(or negative) \textbf{logFC} using the arguments \texttt{absLogFC} and
+\texttt{logFCgreater}. \texttt{absLogFC} forces to take the absolute value of
+\textbf{logFC}, this is \texttt{TRUE} by default. \texttt{logFCgreater}
+specifies, if \texttt{TRUE}, that the \textbf{logFC} value must be greater than
+the threshold.
+
+<<filterDU2, echo=TRUE, eval=FALSE>>=
+# Filter genes that reduces their expression to the half
+du <- aspliDUexample1()
+duFilt <- filterDU( du, 'genes', '0.05', -1, absLogFC = FALSE,
+                    logFCgreater = FALSE  ) 
+@
+
+\subsubsection{Subsetting \texttt{ASpli} objects}
+
+\texttt{ASpliCounts}, \texttt{ASpliAS}, targets \texttt{data.frame} and list of
+\texttt{GAlignments} (i.e. bam files data) can be subsetted by conditions or
+samples.
+<<subset, echo=TRUE, eval=FALSE >>=
+# Subset counts
+counts <- aspliCountsExample()
+countsSmall <- subset(counts, targets, select = c("A_C", "A_D") )
+# Subset AS results. Note that PIR/PSI metrics are not recalculated.
+as <- aspliASexample()
+asSmall <- subset(as, targets, select = c("A_C_0", "A_C_1") )
+# Subset targets
+targets      <- aspliTargetsExample()
+targetsSmall <- subsetTargets( targets, c("A_C", "A_C") )
+# Subset BAMs
+bams     <- aspliBamsExample()
+bamSmall <- subsetBams( bams, targets, c("A_C", "A_C") )
+@
+
+\subsubsection{Merging DU and junction data for bins}
+
+\texttt{mergeBinDUAS} function merge bin data from DU analysis contained in an
+\texttt{ASpliDU} object and bin data from junction repertoire usage and PSI/PIR
+metrics contained in an \texttt{ASpliAS} object. Also a delta PSI/PIR value is
+calculated from a contrast vector.
+
+<<mergeBinDUAS, echo=TRUE, eval=FALSE>>=
+du <- aspliDUexample1()
+as <- aspliASexample()
+mergeBinDUAS(du,as, targets)
+@
+
 \section{Example data}
-It is possible to run a demo of \texttt{ASpli} using public RNA-seq data available via Bioconductor. It requieres installing of \texttt{RNAseqData.HNRNPC.bam.chr14} package and loading  an small TranscriptDb of Human Genome only for chromosome 14. This subset of reads is part of an experiment intended to analyze splicing factors and their relationship with exonization of Alu elements \cite{Zarnack2013453}. We load the package and the genome:
+
+\subsubsection{Synthetis data set}
+ASpli contains a small synthetic data set to test de complete working pipeline.
+It consist of a genome with ten genes with multiple isoforms, a set of
+\textbf{BAM} files from an experiment with two$\times$two factorial design, and
+a \textbf{GTF} file with the corresponding annotation. The two factors in this
+examples are called \textbf{f1} and \textbf{f2}. \textbf{f1} can have value
+\textbf{A} or \textbf{B} and \textbf{f2} can have value \textbf{C} or
+\textbf{D}, defining four conditions: \textbf{A.C}, \textbf{A.D}, \textbf{B.C}
+and \textbf{B.D}. There are three replicates for each conditition (see table
+\ref{tab:Ex01} ) .
+
+\begin{table}[H]
+  \begin{center}
+    \begin{tabular}{lllll}
+    Sample   & f1 & f2 & replicate & condition \\ \hline
+    1        & A  & C  & 0         & A.C       \\
+    2        & A  & C  & 1         & A.C       \\
+    3        & A  & C  & 2         & A.C       \\
+    4        & A  & D  & 0         & A.D       \\
+    5        & A  & D  & 1         & A.D       \\
+    6        & A  & D  & 2         & A.D       \\
+    7        & B  & C  & 0         & B.C       \\
+    8        & B  & C  & 1         & B.C       \\
+    9        & B  & C  & 2         & B.C       \\
+    10       & B  & D  & 0         & B.D       \\
+    11       & B  & D  & 1         & B.D       \\
+    12       & B  & D  & 2         & B.D       \\
+    \end{tabular}
+  \end{center}
+  \caption{Experimental design of the example data set.}
+  \label{tab:Ex01}
+\end{table}
+
+The firts step of the workflow is to load the annotation from the reference
+sequence and extract their features.
+
+<<Ex01.a, echo=TRUE, eval=FALSE>>=
+
+library( GenomicFeatures )
+# gtfFileName contains the full path to the example gtf file in your system.
+gtfFileName <- aspliExampleGTF()
+
+# Create a TxDb object using makeTxDbFromGFF function from GenomicFeatures 
+# package
+genomeTxDb <- makeTxDbFromGFF( gtfFileName )
+
+# Extract the genomic features
+features <- binGenome( genomeTxDb )
+
+@
+
+Also, the exprimental sequencing data must be loaded, and the experimental
+samples, and factors should be defined.
+
+<<Ex01.b, echo=TRUE, eval=FALSE>>=
+
+# bamFiles contains the full path of the bam files in your system
+bamFiles <- aspliExampleBamList( )
+
+# Define the targets
+targets <- data.frame( 
+  row.names = paste0('Sample',c(1:12)),
+  bam = bamFiles,
+  f1 = c( 'A','A','A','A','A','A',
+          'B','B','B','B','B','B'),
+  f2 = c( 'C','C','C','D','D','D',
+          'C','C','C','D','D','D'),
+  stringsAsFactors = FALSE
+)
+
+# Examinate the condition names
+getConditions(targets)
+
+# Load the bam files
+bams = loadBAM(targets)
+@
+
+After the targets are defined and the sequence data is read, you can continue to
+assign the number of counts to each feature.
+
+<<Ex01.c, echo=TRUE, eval=FALSE>>=
+counts <- readCounts( features, bams, targets, readLength = 100, 
+                      maxISize = 5000 )
+@
+
+Now you can run the DE/DU analysis, here will be avaualted a test to hypothesis
+that the expression of some genes respond to the interaction of \textbf{f1} and
+\textbf{f2}. In other words, that the observed effect of applying the two
+factors can not be explained by the independent contribution of each factor.
+The interaction can be expressed as:
+\begin{equation}
+I = ( B.D - B.C ) - ( A.D - A.C ) 
+\end{equation}
+The coefficients of the terms in this expression can be represented in the
+contrast vector $[1,-1,-1,1]$, assuming that they correspond to the order given
+by \texttt{getConditions} function.
+
+<<Ex01.d, echo=TRUE, eval=FALSE>>=
+# DU/DE analysis for genes and bins.
+du <- DUreport( counts, targets, contrast = c( 1, -1, -1, 1 ) )
+# DU analysis for junctions
+du <- junctionDUReport( counts, targets, appendTo = du, 
+                        contrast = c( 1, -1, -1, 1 ) )
+@
+
+The discovery of AS events can be done with:
+<<Ex01.e, echo=TRUE, eval=FALSE>>=
+# AS analysis 
+as <- AsDiscover( counts, targets, features, bams, readLength = 100)
+@
+
+Finally, you can select your top tags integrating differential usage data and
+junction data.
+
+<<Ex01.f, echo=TRUE, eval=FALSE>>=
+# Select top tags from DU
+topTagsBins <- filterDU( du, what = 'bins', fdr = 0.05, logFC = log(1.5,2) )
+# DU results are merged with AS results
+topTagsBins <- mergeBinDUAS( du, as, targets, contrast = c( 1, -1, -1, 1 ) )
+# We filter those top tags that have also junction evidence that supports the
+# differential usage, a change of at least 0.1 between observed and expected 
+# in the PSI or PIR metric is required.
+topTagsBins <- topTagsBins[ abs(topTagsBins[,'delta' ]) > 0.10,]
+@
+
+Bin \textbf{GENE10:E002} is the one with the lowest \textbf{FDR} value, now we
+can examine it in a plot. The results in figure \ref{fig:Ex01gr} show that a
+change in \textbf{f1} from \textbf{A} to \textbf{B} has not the same outcome for
+\textbf{C} or \textbf{D} in \textbf{f2}. 
+
+<<Ex01.f, echo=TRUE, eval=FALSE>>=
+plotGenomicRegions( features,'GENE10:E002', genomeTxDb, targets )
+@
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/GENE10_E002_gr.pdf}
+  \caption{Genomic region of example bin \textbf{GENE10:E002}.}
+  \label{fig:Ex01gr}
+\end{figure}
+
+\subsubsection{Real data set}
+
+It is possible to run a demo of \texttt{ASpli} using public RNA-seq data 
+available via Bioconductor. It requieres installing of 
+\texttt{RNAseqData.HNRNPC.bam.chr14} package and loading  an small TranscriptDb
+of Human Genome only for chromosome 14. This subset of reads is part of an
+experiment intended to analyze splicing factors and their relationship with 
+exonization of Alu elements \cite{Zarnack2013453}. We load the package and the 
+genome:
 %<<librariesEx, echo=TRUE, eval=TRUE>>=
-<<librariesEx, echo=TRUE, eval=FALSE>>=
+<<Ex02.a, echo=TRUE, eval=FALSE>>=
 library(RNAseqData.HNRNPC.bam.chr14)
 @
 
-In this case we are loading a genome \texttt{TranscriptDb} already created and available in the  \texttt{ASpli} package for the Homo sapiens chromosome 14:
+In this case we are loading a genome \texttt{TranscriptDb} already created and 
+available in the \texttt{ASpli} package for the \textit{Homo sapiens}
+chromosome 14:
 
 %<<loadDb, echo=TRUE, eval=TRUE>>=
-<<loadDb, echo=TRUE, eval=FALSE>>=
+<<Ex02.b, echo=TRUE, eval=FALSE>>=
 chr14 <- system.file("extdata","chr14.sqlite", package="ASpli")
 genome <- loadDb(chr14)
 @
 
 And now we are ready to start the complete analysis.
 %<<binGenome, echo=TRUE, eval=TRUE>>=
-<<binGenome, echo=TRUE, eval=FALSE>>=
+<<Ex02.c, echo=TRUE, eval=FALSE>>=
 features <- binGenome(genome) 
 @
 
+This data set contains data for of two conditions \textbf{KD} and \textbf{CT}
+with four replicates each one. 
 Create targets object using the information of the available files:
 %<<targetsEx, echo=TRUE, eval=TRUE>>=
-<<targetsEx, echo=TRUE, eval=FALSE>>=
-targets <- data.frame(bam=RNAseqData.HNRNPC.bam.chr14_BAMFILES,
-                       condition=c(rep("CT",4),rep("KD",4)))
+<<Ex02.d, echo=TRUE, eval=FALSE>>=
+targets <- data.frame( 
+              bam = RNAseqData.HNRNPC.bam.chr14_BAMFILES,
+              treat = c( "CT", "CT", "CT", "CT", 
+                         "KD", "KD", "KD", "KD" ),
+              stringsAsFactors = FALSE )
 @
-Load bam files:
+Then, load the bam files:
 %<<loadBam, echo=TRUE, eval=TRUE>>=
-<<loadBam, echo=TRUE, eval=FALSE>>=
+<<Ex02.e, echo=TRUE, eval=FALSE>>=
 bam <- loadBAM(targets)
 @
 Overlap alignments against features:
 %<<todosJuntos, eval=TRUE>>=
-<<todosJuntos, eval=FALSE>>=
-counts<-readCounts(features, bam, targets, readLength=100L, maxISize=50000)
+<<Ex02.f, eval=FALSE>>=
+counts <- readCounts( features, bam, targets, readLength=100L, maxISize=50000 )
 @
 Perform DE/DU analysis
 %<<DU, eval=TRUE>>=
-<<DU, eval=FALSE>>=
-du_HNRNPC <- DUreport(counts, targets)
+<<Ex02.g, eval=FALSE>>=
+du <- DUreport(counts, targets)
 @
 Analyze AS using junctions:
 %<<AS, eval=TRUE>>=
-<<AS, eval=FALSE>>=
-as_HNRNPC <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
+<<Ex02.g, eval=FALSE>>=
+as <- AsDiscover (counts, targets, features, bam, readLength=100L, threshold = 5, cores = 1 )
 @
 
-Select TopTags (only using DU information:)
+Select top tags, using DU and AS information:
 %<<topTags, echo=TRUE, eval=TRUE>>=
-<<topTags, echo=TRUE, eval=FALSE>>=
-binsdu <- binsDU(du_HNRNPC)
-topTagsBins <- which(binsdu$bin.fdr <= 0.1 & 
-                 abs(binsdu$logFC) >=0.58)
+<<Ex02.h, echo=TRUE, eval=FALSE>>=
+duFiltered <- filterDU( du, 'bins', fdr = 0.05, logFC = log(1.5,2) ) 
+merged     <- mergeBinDUAS( duFiltered, as, targets )
 @
 
-We can inspect visually the results of topTags. Sometimes is useful to merge BAM files by conditions. \textit{(In this example data, control and knock down replicates were  merged using \texttt{samtools merge} into \textbf{CT.bam} and \textbf{KD.bam} respectively)}.
+Bin ZNF410:E013, from top tags, has a usage change that is statistically
+significant and the change of PSI/PIR metric is greater than 0.3. We can inspect
+it visually, see figure \ref{Ex02.plot}.
 
 %<<targetsPlot, eval=TRUE>>=
-<<targetsPlot, eval=FALSE>>=
-targetsPlot <- data.frame(bam=targets$bam, 
-                        sample=targets$condition, 
-                        color=c(rep("blue", 4),rep("red", 4)), 
-                        stringsAsFactors=FALSE)
-@
-
-%<<auxdf, echo=TRUE, eval=TRUE>>=
-<<auxdf, echo=TRUE, eval=FALSE>>=
-auxdf<-binsdu[topTagsBins,]
-#for simplicity, we choose one: LRR1:E005
-plotTopTags(auxdf["LRR1:E005",], 
-            genome, 
-            targetsPlot, 
-            output.dir="testPlots")
+<<Ex02.i, eval=FALSE>>=
+# Show the complete gene, with the bin hightlighted
+plotGenomicRegions( features, 'ZNF410:E013', genome, targets, verbose=TRUE,
+                    colors = matrix(c('#223344','#223344'), ncol=2 ), outfileType='pdf', outfolder='grplots')
+# Show a zoom in in the bin
+plotGenomicRegions( features, 'ZNF410:E013', genome, targets, verbose=TRUE,
+                    colors = matrix(c('#223344','#223344'), ncol=2 ),
+                    zoomOnBins = 0.05)
 @
 \begin{figure}[ht!]
 \centering
-\includegraphics[width=0.5\textwidth]{LRR1_E005.png}
-\caption{Plot of LRR1:E005 Exon Skipping}
+\includegraphics[width=0.85\textwidth]{images/ZNF410_E013_gr.pdf}
+\caption{Plot of ZNF410:E013 exon skipping}
+\label{Ex02.plot}
 \end{figure}
-
-
-%<<check, echo=TRUE, eval=TRUE>>=
-<<check, echo=TRUE, eval=FALSE>>=
-binsdu <- binsDU(du_HNRNPC)
-topTagsBins <- which(binsdu$bin.fdr <= 0.1 & 
-                     abs(binsdu$logFC) >=0.58)
-@
-
-%<<sessionInfo, eval=TRUE, echo=TRUE>>=
-<<sessionInfo, eval=FALSE, echo=TRUE>>=
-sessionInfo()
-@
 
 \bibliography{ASpli}
 \end{document}

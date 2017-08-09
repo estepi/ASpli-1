@@ -1,3 +1,47 @@
+aspliTargetsExample <- function( ) {
+  
+  bamfiles <- system.file( 'extdata', 
+      c('A_C_0.bam', 'A_C_1.bam', 'A_C_2.bam',
+          'A_D_0.bam', 'A_D_1.bam', 'A_D_2.bam',
+          'B_C_0.bam', 'B_C_1.bam', 'B_C_2.bam',
+          'B_D_0.bam', 'B_D_1.bam', 'B_D_2.bam' ),
+      package = "ASpli") 
+  
+  targets <- data.frame(
+      row.names = c( 'A_C_0', 'A_C_1', 'A_C_2',
+          'A_D_0', 'A_D_1', 'A_D_2',
+          'B_C_0', 'B_C_1', 'B_C_2',
+          'B_D_0', 'B_D_1', 'B_D_2' ),
+      bam = bamfiles,
+      f1  = rep( c('A','B'), each=6 ),
+      f2  = rep( c('C','D'), 2, each=3 ),
+      stringsAsFactors = FALSE )
+  
+  return( targets )
+  
+}
+
+aspliExampleGTF <- function( ) {
+  
+  system.file( 'extdata', 'genes.mini.gtf' , package = "ASpli" )
+  
+}
+
+aspliExampleBamList <- function( ) {
+  bamFileNames <- paste( 
+      rep( c( 'A', 'B' ), each = 6 ), 
+      rep( c( 'C', 'D' ), 2, each=3 ), 
+      paste0( rep(0:2,2), '.bam'),
+      sep='_' )
+  
+  system.file( 'extdata', bamFileNames , package = "ASpli")
+}
+
+aspliBamsExample <- function( ) {
+  targets <- aspliTargetsExample()
+  loadBAM( targets )
+} 
+
 aspliDUexample1 <- function( ) {
   .loadASpliObject( "ASpliDU", 'du', 
       c('genes', 'bins', 'junctions'),
@@ -86,7 +130,7 @@ aspliFeaturesExample <- function( ) {
     for ( i in 1:length( slotNames ) ) {
       fn <- paste0( prefix, '.',slotNames[i] )
       fn <- system.file("extdata", fn,  package="ASpli")
-      slot.table <- read.table( fn, sep = "\t", stringsAsFactors = FALSE )
+      slot.table <- read.table( fn, sep = "\t", stringsAsFactors = FALSE, check.names = FALSE )
       obj <- do.call( paste0(setters[i],'<-'), list( obj , slot.table ) )
     }
   }
