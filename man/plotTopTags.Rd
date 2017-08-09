@@ -75,7 +75,7 @@ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
   auxdf<-binsdu[topTagsBins,]
   
   plotTopTags( auxdf["GENE02:E002",], 
-               genomeTxDb, 
+               genomeTxDb,
                targetsPlot, 
                output.dir="testPlots")
 

@@ -1321,7 +1321,7 @@ index \textbf{bam} files beforehand. \textbf{Bam} files can be merged using
 \texttt{samtools} utility or \texttt{RSamtools} package. 
 
 <<targetsPlot, echo=TRUE, eval=FALSE>>=
-
+library(GenomicFeatures)
 bamfiles <- system.file( 'extdata', 
     c('A_C_0.bam', 'A_C_1.bam', 'A_C_2.bam',
       'A_D_0.bam', 'A_D_1.bam', 'A_D_2.bam',

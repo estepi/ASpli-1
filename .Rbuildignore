@@ -1,1 +1,6 @@
 vignettes/binDefinition.png
+.gitignore
+.project
+R/.gitignore
+vignettes/.gitignore
+.git

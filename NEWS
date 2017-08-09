@@ -1,5 +1,14 @@
+CHANGES IN VERSION 1.3.11
+-------------------------
+
+BUG FIXES
+
+    * ZNF410_E013.gr.pdf file in vignettes/images was changed to 
+      ZNF410_E013_gr.pdf to be correctly used in the latex code.  
+
+
 CHANGES IN VERSION 1.3.10
-------------------------
+-------------------------
 
 DOCUMENTATION
 
