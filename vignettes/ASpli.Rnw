@@ -15,7 +15,7 @@ options(continue=" ")
 \usepackage{amsmath}
 \usepackage{float}
 
-\newcommand{\secref}[1]{\ref{#1}:\nameref{#1}}
+\newcommand{\secref}[1]{\ref#1:\nameref#1}
 
 \newfloat{captionedEq}{thp}{eqc}
 \floatname{captionedEq}{Equation}
