@@ -70,7 +70,8 @@
 
 \examples{ 
   # Create a transcript DB from gff/gtf annotation file.
-  # Warnings in this examples can be ignored. 
+  # Warnings in this examples can be ignored.
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -94,7 +95,7 @@
   
   # Calculate differential usage of genes, bins and junctions 
   du       <- DUreport( counts, targets )
-  du       <- junctionDUReport( counts, targets, appendTo = du)
+  du       <- junctionDUreport( counts, targets, appendTo = du)
   
   # Calculate PSI / PIR for bins and junction.
   as       <- AsDiscover( counts, targets, features, bams, readLength = 100, 

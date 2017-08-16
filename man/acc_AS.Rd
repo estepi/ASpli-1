@@ -6,6 +6,12 @@
 \alias{joint}
 \alias{junctionsPIR}
 \alias{junctionsPSI}
+\alias{altPSI<-}
+\alias{esPSI<-}
+\alias{irPIR<-}
+\alias{joint<-}
+\alias{junctionsPIR<-}
+\alias{junctionsPSI<-}
 
 \title{ Accessors for ASpliAS object }
 

@@ -9,13 +9,25 @@
 \alias{countsg,ASpliCounts-method}
 \alias{countsie2,ASpliCounts-method}
 \alias{countsj,ASpliCounts-method}
-\alias{DUreport_DEXSeq,ASpliCounts-method}
+\alias{countsb<-,ASpliCounts,data.frame-method}
+\alias{countse1i<-,ASpliCounts,data.frame-method}
+\alias{countsg<-,ASpliCounts,data.frame-method}
+\alias{countsie2<-,ASpliCounts,data.frame-method}
+\alias{countsj<-,ASpliCounts,data.frame-method}
+\alias{junctionDUreport,ASpliCounts-method}
+\alias{DUreportBinSplice,ASpliCounts-method}
 \alias{DUreport,ASpliCounts-method}
+\alias{plotBins,ASpliCounts-method}
 \alias{rdsb,ASpliCounts-method}
 \alias{rdsg,ASpliCounts-method}
+\alias{rdsb<-,ASpliCounts,data.frame-method}
+\alias{rdsg<-,ASpliCounts,data.frame-method}
 \alias{rds,ASpliCounts-method}
+\alias{subset,ASpliCounts-method}
+\alias{writeAll,ASpliCounts-method}
 \alias{writeCounts,ASpliCounts-method}
 \alias{writeRds,ASpliCounts-method}
+
 
 \title{Class \code{"ASpliCounts"}}
 

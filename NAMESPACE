@@ -6,14 +6,18 @@ import(IRanges)
 import(GenomicRanges)
 import(GenomicFeatures)
 import(edgeR)
+import(Rsamtools)
+import(BiocStyle)
 import(GenomicAlignments)
-  importFrom("grDevices", "dev.off", "png", "rgb")
+importFrom( "grDevices", "dev.off", "png", "rgb", "bmp", "col2rgb", "dev.new", 
+            "jpeg", "pdf", "tiff")
 importFrom("stats", "aggregate", "formula", "p.adjust", "model.matrix")
 importFrom("graphics", "axis", "barplot", "legend", "lines", "par","plot", "title")
 importFrom(parallel, mclapply)
 import(S4Vectors)
 import(AnnotationDbi)
 import(Gviz)
+import(grid)
 exportMethods(
     "AsDiscover",
     "binGenome",
@@ -45,7 +49,7 @@ exportMethods(
     "junctionsDU",
     "DUreportBinSplice",
     "show",
-    "junctionDUReport",
+    "junctionDUreport",
     "containsGenesAndBins",
     "containsJunctions",
     "plotBins",

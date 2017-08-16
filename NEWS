@@ -1,7 +1,18 @@
 CHANGES IN VERSION 1.3.11
 -------------------------
 
+FEATURES
+
+    * Change the assigning of some 'ES*' events to 'as' events.
+
+    * Added verbose option of DUreportBinSplice method
+
+    * junctionDUReport methods changed to junctionDUreport to be consistent with
+      other methods names.
+
 BUG FIXES
+
+    * Many corrections in the vignette and man pages.
 
     * ZNF410_E013.gr.pdf file in vignettes/images was changed to 
       ZNF410_E013_gr.pdf to be correctly used in the latex code.  

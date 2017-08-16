@@ -6,6 +6,14 @@
 \alias{countsj}
 \alias{rdsg}
 \alias{rdsb}
+\alias{countsb<-}
+\alias{countse1i<-}
+\alias{countsg<-}
+\alias{countsie2<-}
+\alias{countsj<-}
+\alias{rdsg<-}
+\alias{rdsb<-}
+
 \title{
 Accessors for ASpliCounts object
 }

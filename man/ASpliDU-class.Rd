@@ -4,11 +4,19 @@
 
 \docType{class}
 
+\alias{ASpliDU}
 \alias{ASpliDU-class}
 \alias{binsDU,ASpliDU-method}
 \alias{genesDE,ASpliDU-method}
 \alias{junctionsDU,ASpliDU-method}
+\alias{binsDU<-,ASpliDU-method}
+\alias{genesDE<-,ASpliDU,data.frame-method}
+\alias{junctionsDU<-,ASpliDU,data.frame-method}
 \alias{writeDU,ASpliDU-method}
+\alias{filterDU,ASpliDU-method}
+\alias{mergeBinDUAS,ASpliDU,ASpliAS-method}
+\alias{containsGenesAndBins,ASpliDU-method}
+\alias{containsJunctions,ASpliDU-method}
 
 \title{Class \code{"ASpliDU"}}
 

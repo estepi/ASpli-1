@@ -409,7 +409,7 @@
 
 # ---------------------------------------------------------------------------- #
 # .findAsBin 
-.findAsBin <- function( exon.bins, intron.bins, transcripts, junctions, logTo = NULL) {
+.findAsBin <- function( exons, exon.bins, intron.bins, transcripts, junctions, logTo = NULL) {
   
   # -------------------------------------------------------------------------- #
   # Get all alternative bins. I.e. those that are shared between exons bins and
@@ -481,7 +481,14 @@
   binOverlapsJunction <- rep( FALSE ,  nrow(auxdf) ) 
   binOverlapsJunction[queryHits(over)] <- TRUE
   # -------------------------------------------------------------------------- #
-  
+
+  # -------------------------------------------------------------------------- #
+  # Looks for bins that overlap perfectly with an exon
+  over <- findOverlaps( bins, exons, type="equal")
+  binOverlapsExon <- rep( FALSE ,  nrow(auxdf) ) 
+  binOverlapsExon[queryHits(over)] <- TRUE
+  # -------------------------------------------------------------------------- #
+
   
   # -------------------------------------------------------------------------- #
   # Looks for bins that overlaps with the start or the end of a junction 
@@ -520,14 +527,16 @@
   # annotation.
   
   auxdf[ isAS & neighbourIsAS & binOverlapsJunction , 'events' ] <- "IR*"
-  auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & binOverlapsJunctionEnd, 'events' ] <- "ES*"
+  #auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & binOverlapsJunctionEnd, 'events' ] <- "ES*"
+  auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsExon, 'events' ] <- "ES*"
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & ! binOverlapsJunctionEnd & isPlusStrand, 'events' ] <- "Alt3ss*" 
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & ! binOverlapsJunctionEnd & isMinusStrand, 'events' ] <- "Alt5ss*"
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  ! binOverlapsJunctionStart & binOverlapsJunctionEnd & isPlusStrand, 'events' ] <- "Alt5ss*" 
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  ! binOverlapsJunctionStart & binOverlapsJunctionEnd & isMinusStrand, 'events' ] <- "Alt3ss*" 
   
   auxdf[ isAS & neighbourIsAS & binOverlapsJunction , 'eventsJ' ] <- "IR"
-  auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & binOverlapsJunctionEnd, 'eventsJ' ] <- "ES"
+  #auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & binOverlapsJunctionEnd, 'eventsJ' ] <- "ES"
+  auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsExon, 'eventsJ' ] <- "ES"
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & ! binOverlapsJunctionEnd & isPlusStrand, 'eventsJ' ] <- "Alt3ss" 
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  binOverlapsJunctionStart & ! binOverlapsJunctionEnd & isMinusStrand, 'eventsJ' ] <- "Alt5ss"
   auxdf[ isAS & neighbourIsAS & ! binOverlapsJunction &  ! binOverlapsJunctionStart & binOverlapsJunctionEnd & isPlusStrand, 'eventsJ' ] <- "Alt5ss"

@@ -30,7 +30,7 @@
 \author{ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz}
 
 \seealso{ 
-  \code{ \link{ AsDiscover }}, 
-  \code{ \link{ binGenome }},
-  \code{ \link{ DUreport }}
+  \code{ \link{AsDiscover}}, 
+  \code{ \link{binGenome}},
+  \code{ \link{DUreport}}
 }

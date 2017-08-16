@@ -81,6 +81,7 @@
 \examples{
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -103,18 +104,18 @@
                           maxISize = 50000 )
   
   # Calculate differential usage of junctions only 
-  du       <- junctionDUReport( counts, targets )
+  du       <- junctionDUreport( counts, targets )
 
   # Calculate differential usage of genes, bins and junctions 
   du2       <- DUreport( counts, targets )
-  du2       <- junctionDUReport( counts, targets, appendTo = du2 )
+  du2       <- junctionDUreport( counts, targets, appendTo = du2 )
 
   # Export results  
   writeDU( du = du, output.dir = "only_du" )
 }
 
 \seealso{
-  \code{\link{edgeR}}, \code{\link{DUReport}}
+  \code{\link{edgeR}}, \code{\link{DUreport}}
   Accessors: \code{\link{junctionsDU}}
   Export: \code{\link{writeDU}}
 }

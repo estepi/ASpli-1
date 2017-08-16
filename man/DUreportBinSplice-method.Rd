@@ -13,17 +13,18 @@
 }
 
 \usage{
-  DUreport( counts, 
-            targets, 
-            minGenReads = 10, 
-            minBinReads = 5,
-            minRds = 0.05, 
-            contrast = NULL, 
-            forceGLM = FALSE, 
-            ignoreExternal = TRUE, 
-            ignoreIo = TRUE, 
-            ignoreI = FALSE,
-            filterWithContrasted = FALSE )
+  DUreportBinSplice( counts, 
+                     targets, 
+                     minGenReads = 10, 
+                     minBinReads = 5,
+                     minRds = 0.05, 
+                     contrast = NULL, 
+                     forceGLM = FALSE, 
+                     ignoreExternal = TRUE, 
+                     ignoreIo = TRUE, 
+                     ignoreI = FALSE,
+                     filterWithContrasted = FALSE,
+                     verbose = TRUE )
 }
 
 \arguments{
@@ -78,8 +79,11 @@
     A logical value specifying if bins, genes and junction will be filtered by
     read quantity and read density using data from those conditions that will 
     be used in the comparison, i.e. those which coefficients in contrast 
-    argument are different from zero. The default value is FALSE.
-  }
+    argument are different from zero. The default value is FALSE, it is strongly
+    recommended to do not change this value. }
+  \item{verbose}{
+    A logical value that indicates that detailed information about each step in 
+    the analysis will be presented to the user. }
 }
 
 \value{ 
@@ -92,6 +96,7 @@
 \examples{
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -113,7 +118,7 @@
   counts   <- readCounts( features, bams, targets, cores = 1, readLength = 100, 
                           maxISize = 50000 )
   
-  # Calculate differential usage of genes, bins and junctions 
+  # Calculate differential usage of genes and bins
   du       <- DUreportBinSplice( counts, targets )
 
   # Export results  
@@ -121,7 +126,7 @@
 }
 
 \seealso{
-  \code{\link{edgeR}}, \code{\link{junctionDUReport}}
+  \code{\link{edgeR}}, \code{\link{junctionDUreport}}
   Accessors: \code{\link{genesDE}}, \code{\link{binsDU}}
   Export: \code{ \link{writeDU} }
 }

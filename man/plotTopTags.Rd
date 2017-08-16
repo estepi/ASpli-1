@@ -33,6 +33,7 @@ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
 
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -56,7 +57,7 @@ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
   
   # Calculate differential usage of genes, bins and junctions 
   du       <- DUreport( counts, targets )
-  du       <- junctionDUReport( counts, targets, appendTo = du)
+  du       <- junctionDUreport( counts, targets, appendTo = du)
   
   # Calculate PSI / PIR for bins and junction.
   as       <- AsDiscover( counts, targets, features, bams, readLength = 100, 
@@ -74,10 +75,8 @@ Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz
                           
   auxdf<-binsdu[topTagsBins,]
   
-  plotTopTags( auxdf["GENE02:E002",], 
-               genomeTxDb,
-               targetsPlot, 
-               output.dir="testPlots")
+  plotTopTags( auxdf["GENE02:E002",], genomeTxDb, targetsPlot, 
+               output.dir = "testPlots" )
 
 }
 

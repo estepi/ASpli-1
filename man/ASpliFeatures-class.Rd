@@ -9,7 +9,10 @@
 \alias{featuresg,ASpliFeatures-method}
 \alias{featuresj,ASpliFeatures-method}
 \alias{readCounts,ASpliFeatures-method}
-
+\alias{plotGenomicRegions,ASpliFeatures-method}
+\alias{featuresb<-,ASpliFeatures,GRanges-method}
+\alias{featuresg<-,ASpliFeatures,GRangesList-method}
+\alias{featuresj<-,ASpliFeatures,GRanges-method}
 \title{Class \code{"ASpliFeatures"}}
 
 \description{Contains Genomic Ranges of different features extracted from a 

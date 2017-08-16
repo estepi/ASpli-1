@@ -20,30 +20,28 @@
     zoomOnBins = FALSE, deviceOpt = NULL, highLightBin = TRUE, outfolder = NULL, 
     outfileType = 'png', mainFontSize = 24, annotationHeight = 0.2,
     annotationCol = 'black', annotationFill = 'gray', annotationColTitle = 'black',
-    preMergedBAMs = NULL, useTransparency = TRUE, tempFolder = 'tmp', 
+    preMergedBAMs = NULL, useTransparency = FALSE, tempFolder = 'tmp', 
     avoidReMergeBams= FALSE, verbose = TRUE )
 }
 
 \arguments{
-  \item{ features }{
+  \item{features}{
     An ASpliFeatures object, generated with \code{binGenoms} function.
   }
-  \item{ x }{ 
+  \item{x}{ 
     A character vector with the names of bins or genes to plot. To plot into a
     window is recommended that the length of x be one.
   }
-  \item{ genomeTxDb }{
+  \item{genomeTxDb}{
     A TxDb object with the annotation of reference genome.
   }
-  \item{ counts }{
-    An object of class \code{ASpliDU} }
-  \item{ targets }{A data frame containing sample, bam files and experimental 
+  \item{targets}{A data frame containing sample, bam files and experimental 
     factor columns }
-  \item{ xIsBin }{
+  \item{xIsBin}{
     A logical value that indicates if values in x corresponds to gene names or
     bin names.
   }
-  \item{ layout }{ 
+  \item{layout}{ 
     A character with value 'auto' or a character matrix with condition names 
     arranged with the desired layout of the panels in plots. The dimensions of 
     layout matrix, colors matrix and plotTitles matrices must be the same. 
@@ -51,13 +49,13 @@
     to that column are modified to occupy the total height.  
     The default value is 'auto'.
   }
-  \item{ colors }{ 
+  \item{colors}{ 
     A character containing value 'auto' or containing colors strings, or a 
     character matrix with color names arranged with the layout specified in 
     layout argument. The dimensions of layout matrix, colors matrix and 
     plotTitles matrices must be the same. The default value is 'auto'. 
   }
-  \item{ plotTitles }{ 
+  \item{plotTitles}{ 
     A character containing value 'auto', or a character matrix with titles for
     each panel arranged with the layout specified in 
     layout argument. The dimensions of layout matrix, colors matrix and 
@@ -92,17 +90,17 @@
     end. If the name of the bin contains invalid character for a file name, 
     those will be replaced by an underscore character.
   }
-  \item{ outfileType }{
+  \item{outfileType}{
     A character value the specifies the file format of the plot to be created.
     Is used only when outfolder is not NULL. Accepted values are 'png', 'jpeg',
     'bmp', 'tiff', 'pdf'. Each value is the graphic device used to create the 
     image. The default value is 'png'. 
   }
-  \item{ mainFontSize }{
+  \item{mainFontSize}{
     A numeric value specifying the size of the main title. The default value is 
     24.
   }
-  \item{ annotationHeight }{
+  \item{annotationHeight}{
     A double value specifying the proportion of the total height used to 
     represent the gene model. The default value is 0.2. 
   }
@@ -147,7 +145,7 @@
     set of genes and bins was done in the previous execution of 
     plotGenomicRegions function. The default value is FALSE.  
   }
-  \item{ verbose }{
+  \item{verbose}{
     A logical value specifying that detailed information about the execution
     will be informed to the user. The default value is TRUE. 
   }
@@ -160,6 +158,7 @@
 \examples{
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -175,15 +174,9 @@
                factor1 = c( 'C','C','C','D','D','D'),
                stringsAsFactors = FALSE )
   
-  # Load reads from bam files
-  bams <- loadBAM( targets )
-  
-  # Read counts from bam files
-  counts   <- readCounts( features, bams, targets, cores = 1, readLength = 100, 
-                          maxISize = 50000 )
   # Plot a single bin to a window
   plotGenomicRegions( 
-    counts, 
+    features, 
     'GENE01:E002', 
     genomeTxDb, 
     targets, 
@@ -197,7 +190,7 @@
     
   # plot two bins to pdf files.
   plotGenomicRegions( 
-    counts, 'GENE01:E002', 
+    features, c( 'GENE01:E002', 'GENE02:E002' ), 
     genomeTxDb, 
     targets, 
     layout = matrix( c( 'C', 'D'), ncol = 1),

@@ -14,8 +14,7 @@
 }
 
 \usage{
-  subset( x, targets, select )
-  subset( x, targets, select )
+  subset( x, ... )
   subsetBams( x, targets, select )
   subsetTargets( targets, select, removeRedundantExpFactors )
 }
@@ -38,6 +37,11 @@
     can have only one value. If this argument is TRUE those experimental 
     factors are absent in the resulting target data frame. 
   }
+  \item{ ... }{ Subsetting ASpliCounts and ASpliAS objects sub subset method 
+    requires a targets argument and a select argument with the same 
+    specifications that the arguments with the same name in subsetBams and 
+    subsetTargets functions }
+  
 }
 \value{ A data frame similar to x ( or targets for subsetTargets) with only the
  containing only the selected elements. }
@@ -48,6 +52,7 @@
 
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   

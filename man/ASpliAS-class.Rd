@@ -4,6 +4,7 @@
 
 \docType{class}
 
+\alias{ASpliAS}
 \alias{ASpliAS-class}
 \alias{altPSI,ASpliAS-method}
 \alias{esPSI,ASpliAS-method}
@@ -11,6 +12,13 @@
 \alias{joint,ASpliAS-method}
 \alias{junctionsPIR,ASpliAS-method}
 \alias{junctionsPSI,ASpliAS-method}
+\alias{altPSI<-,ASpliAS,data.frame-method}
+\alias{esPSI<-,ASpliAS,data.frame-method}
+\alias{irPIR<-,ASpliAS,data.frame-method}
+\alias{joint<-,ASpliAS,data.frame-method}
+\alias{junctionsPIR<-,ASpliAS,data.frame-method}
+\alias{junctionsPSI<-,ASpliAS,data.frame-method}
+\alias{subset,ASpliAS-method}
 \alias{writeAS,ASpliAS-method}
 
 \title{Class \code{"ASpliAS"}}

@@ -114,7 +114,10 @@ setMethod(
       mcols( intron.orig ) <- append( mcols( intron.orig ), DataFrame( event=event ))
       mcols( intron.orig ) <- append( mcols( intron.orig ), DataFrame( eventJ=eventJ ))
       
-      exons.introns <- .findAsBin( exon.bins, intron.bins, transcripts, junctions, logTo )
+      exons <- exons( genome )
+      
+      exons.introns <- .findAsBin( exons, exon.bins, intron.bins, transcripts, 
+          junctions, logTo )
       fullT <- c(exons.introns,intron.orig)
       
       features@genes <- genes.by.exons
@@ -536,21 +539,30 @@ setGeneric( name = 'DUreportBinSplice',
     def = function( counts, targets, minGenReads  = 10, minBinReads = 5, 
         minRds = 0.05, contrast = NULL, forceGLM = FALSE,  
         ignoreExternal = TRUE, ignoreIo = TRUE, ignoreI = FALSE, 
-        filterWithContrasted = FALSE ) 
+        filterWithContrasted = FALSE, verbose = TRUE ) 
       standardGeneric( 'DUreportBinSplice'))
 
 setMethod( 
     f = 'DUreportBinSplice',
     signature = 'ASpliCounts',
-    definition = function( counts, targets, minGenReads  = 10, minBinReads = 5,
-        minRds = 0.05, contrast = NULL, forceGLM = FALSE, ignoreExternal = TRUE,
-        ignoreIo = TRUE, ignoreI = FALSE, filterWithContrasted = FALSE ) {
+    definition = function( counts, 
+			targets, 
+			minGenReads  = 10, 
+			minBinReads = 5,
+			minRds = 0.05, 
+			contrast = NULL, 
+			forceGLM = FALSE, 
+			ignoreExternal = TRUE,
+			ignoreIo = TRUE, 
+			ignoreI = FALSE, 
+			filterWithContrasted = FALSE,
+			verbose = TRUE ) {
       .DUreportBinSplice( counts, targets, minGenReads, minBinReads, minRds, 
           contrast, forceGLM, ignoreExternal, ignoreIo, ignoreI, 
-          filterWithContrasted ) 
+          filterWithContrasted, verbose = TRUE ) 
     })
 
-setGeneric( name = "junctionDUReport",
+setGeneric( name = "junctionDUreport",
     def = function (  counts, 
         targets, 
         appendTo = NULL, 
@@ -561,11 +573,11 @@ setGeneric( name = "junctionDUReport",
         offsetUseFitGeneX = TRUE,
         contrast = NULL,
         forceGLM = FALSE 
-        ) standardGeneric("junctionDUReport") )
+        ) standardGeneric("junctionDUreport") )
 
   
 setMethod(
-    f = "junctionDUReport",
+    f = "junctionDUreport",
     signature = "ASpliCounts",
     definition = function ( 
         counts, 
@@ -611,7 +623,7 @@ setMethod(
 # writeDU
 
 setGeneric( name = 'containsGenesAndBins', 
-    def = function ( du, ... ) standardGeneric("containsGenesAndBins") )
+    def = function ( du ) standardGeneric("containsGenesAndBins") )
 
 setMethod( f = 'containsGenesAndBins', 
     signature = "ASpliDU",
@@ -620,7 +632,7 @@ setMethod( f = 'containsGenesAndBins',
     } )
 
 setGeneric( name = 'containsJunctions', 
-    def = function ( du, ... ) standardGeneric("containsJunctions") )
+    def = function ( du ) standardGeneric("containsJunctions") )
 
 setMethod( f = 'containsJunctions', 
     signature = "ASpliDU",
@@ -739,7 +751,7 @@ setGeneric( name = "plotBins",
         useHCColors     = FALSE,
         legendAtSide    = TRUE,
         outfolder       = NULL,
-        outfileType     = 'png',
+        outfileType     = c( 'png', 'bmp', 'jpeg', 'tiff', 'pdf')[1],
         deviceOpt       = NULL ) standardGeneric( 'plotBins' ) )
 
 setMethod( 
@@ -765,7 +777,7 @@ setMethod(
         useHCColors     = FALSE,
         legendAtSide    = TRUE,
         outfolder       = NULL,
-        outfileType     = 'png',
+        outfileType     = c( 'png', 'bmp', 'jpeg', 'tiff', 'pdf')[1],
         deviceOpt       = NULL ) {
       
       .plotBins( counts, as, bin, factorsAndValues, targets, main, colors, 
@@ -808,7 +820,7 @@ setGeneric(
         useTransparency = FALSE,
         tempFolder = 'tmp',
         avoidReMergeBams = FALSE,
-        verbose = FALSE ) standardGeneric( "plotGenomicRegions" ) )
+        verbose = TRUE ) standardGeneric( "plotGenomicRegions" ) )
 
 setMethod(
     f = "plotGenomicRegions",
@@ -835,10 +847,10 @@ setMethod(
         annotationFill = 'gray', 
         annotationColTitle = 'black',
         preMergedBAMs = NULL,
-        useTransparency = TRUE,
+        useTransparency = FALSE,
         tempFolder = 'tmp',
         avoidReMergeBams = FALSE,
-        verbose = FALSE ) {
+        verbose = TRUE ) {
       
           .plotGenomicRegions(
               x, 

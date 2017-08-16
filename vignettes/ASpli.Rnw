@@ -95,8 +95,6 @@ TxDb <- makeTxDbFromGFF(
   format="gtf")
 @
 
-
-
 \section{Running \texttt{ASpli}}
 
 The workflow intended to be used with \texttt{ASpli} is divided in five
@@ -194,6 +192,7 @@ figure \ref{fig:binAssignation} shows a summary of the assignation.
 Finally, those bins that are at the beggining or end of a transcript are
 labelled as \textbf{external}.
 
+
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\textwidth]{images/event_assignment.pdf}
@@ -203,8 +202,6 @@ represents exons, while the little light orange boxes represent introns. Gene
 models shown are plus sense strand. }
 \label{fig:binAssignation}
 \end{figure}
-
-
 
 \subsubsection{Naming conventions for bins and junctions }
 \label{sec:binNaming}
@@ -393,7 +390,6 @@ ie2Counts <- countsie2(counts)
 writeCounts(counts=counts, output.dir = "example")
 writeRds(counts=counts, output.dir = "example")
 @
-
 
 \subsubsection{Counting intron flanking regions }
 \label{sec:intronFlanking}
@@ -609,19 +605,19 @@ greater or equal than a threshold value for at least one condition $j$.
 \begin{figure}[ht!]
     \begin{subfigure}[t]{1\textwidth}
     \centering
-      \includegraphics[width=0.7\textwidth]{images/psi5ss.pdf}
-      \includegraphics[width=0.7\textwidth]{images/psi3ss.pdf}      
+      \includegraphics[width=0.6\textwidth]{images/psi5ss.pdf}
+      \includegraphics[width=0.6\textwidth]{images/psi3ss.pdf}      
       \caption{PSI metric for alternative 5' and 3' splicing sites estimation and its relationship with junctions}
     \end{subfigure}
     \begin{subfigure}[t]{1\textwidth}
     \centering
-      \includegraphics[width=0.7\textwidth]{images/psies.pdf}
+      \includegraphics[width=0.6\textwidth]{images/psies.pdf}
       \caption{PSI metric for exon skipping estimation and its relationship with
       junctions}
     \end{subfigure}
     \begin{subfigure}[t]{1\textwidth}
       \centering
-      \includegraphics[width=0.7\textwidth]{images/pir.pdf}
+      \includegraphics[width=0.6\textwidth]{images/pir.pdf}
       \caption{PIR metric for intron retention estimation and its relationship
       with junctions}
     \end{subfigure}    
@@ -652,15 +648,15 @@ count-centric analysis and provide independent experimental support for the
 existence of novel AS events, based on the identification of corresponding 
 changes in nearby splice junctions.
 
-\begin{figure}
+\begin{figure}[ht!]
   \begin{subfigure}[t]{1\textwidth}
     \centering
-    \includegraphics[width=0.7\textwidth]{images/pir_junc.pdf}
+    \includegraphics[width=0.6\textwidth]{images/pir_junc.pdf}
     \caption{ PIR metric to estimate intron retention for junctions}
   \end{subfigure}
   \begin{subfigure}[t]{1\textwidth}
     \centering
-    \includegraphics[width=0.7\textwidth]{images/psi_junc.pdf}
+    \includegraphics[width=0.6\textwidth]{images/psi_junc.pdf}
     \caption{ PSI metric to compute inclusion of exons bearing a junction.} 
   \end{subfigure}
   \caption{PSI and PIR metrics for junctions}
@@ -821,7 +817,7 @@ defines the comparison that will be done. For a simple pair comparison between
 \texttt{Control} and \texttt{Trat} conditions, represeted as $Trat - Control$ 
 can be expressed as:
 
-<<<export, echo=TRUE, eval=FALSE>>=
+<<export, echo=TRUE, eval=FALSE>>=
 contrast <- c( -1, 1 ) 
 @
 
@@ -908,13 +904,6 @@ rely on their \texttt{diffSpliceDGE} method. This method uses an strategy
 similar to the offset methodology. ASpli allow its use with the method
 \texttt{DUreportBinSplice}.
 
-%<<export, echo=TRUE, eval=FALSE>>=
-%writeDU(du, output.dir="example")
-%genesde <- genesDE(du)
-%binsdu <- binsDU(du)
-%junctionsdu <- junctionsDU(du)
-%@
-
 \subsubsection{Usage of \texttt{DUreport}, \texttt{DUreportBinSplice} and
 \texttt{junctionDUreport} methods }
 
@@ -988,7 +977,6 @@ Where the accepted parameters are:
   
 \end{description}
 
-
 \texttt{DUreportBinSplice} method performs DE estimation for genes and DU
 estimation for bins in the same run. The call of this method is done by:
 
@@ -1034,7 +1022,7 @@ Where the accepted parameters are:
   be ignored in the analysis. The default value is \texttt{TRUE}.
   \item[ignoreI] a logical value indicating that only exons should be included
   in the analysis. The default value is \texttt{FALSE}.
-  \item[filterWithConstrasted] a logical value that specifies that gene and
+  \item[filterWithContrasted] a logical value that specifies that gene and
   bin filtering when more than two conditions are present, should be done only
   with the data of those conditions and ignore the others. The default value
   id \texttt{FALSE}, it is strongly recommended to do not change this value.
@@ -1219,8 +1207,6 @@ writeAS(as=as, output.dir="example_as");
 writeAll(counts=counts, du=du, as=as, output.dir="example_all")
 @
 
-
-
 Column of text tables has the same name and meaning that those described in
 \secref{sec:countsContents}, \secref{secASpliAsContent} and
 \secref{sec:asplidu}. Exported text tables files are arranged in subfolders 
@@ -1237,71 +1223,6 @@ additional text table:
   \item[bins\_du\_psi\_pir.tab] Contains bin DU usage for all bins merged
   with PSI/PIR metrics.
 \end{description}
-
-
-%
-%Information summary reported in tables:
-%\subsubsection*{Genomic metadata:}
-%\begin{itemize}
-%\item Common info:
-%    \begin{itemize}
-%    \item \textbf{locus\_overlap}: whether overlap exists with another gene. Genes with the same coordinates are discarded and only one is kept (first one alphabetically).    
-%    \item \textbf{symbol}: common name
-%    \item \textbf{gene\_coordinates}: genomic coordinates in a shrink mode
-%    \item \textbf{start, end}  and \textbf{length}: genomic coordinate of corresponding feature
-%  \end{itemize}
-%%-----------------------------%
-%\item Gene exclusive 
-%  \begin{itemize}
-%  \item \textbf{effective\_length}: sum of length of exons bins of the gene (constitutive and alternative)
-%  \end{itemize}
-%%------------------------------%
-%\item Bin exclusive (exons, introns, e12, ie2 tables):
-%\begin{itemize}
-%    \item \textbf{feature}: levels are E (exon), I (intron), Io (original intron)
-%    \item \textbf{event}: according to our classification, bins are classified into ES, IR, ALt5'SS, ALt3'SS, external. Bins tagged with * means this AS bin is involved simultaneously in more than one AS event type mean they came from 
-%  \item \textbf{locus}: gene coordinates
-%\end{itemize}
-%%------------------------------------------------%
-%\item Junction exclusive:
-%  \begin{itemize}
-%  \item \textbf{junction}: if exist, name of existing junction 
-%   \item \textbf{gene}: if junction is inside  an existing gene (within)
-%  \item \textbf{strand}: corresponding strand of gene match
-%  \item \textbf{multipleHit}: if junction matchs multiple locus
-%  \item \textbf{bin\_spanned}: bins  spanned by junction 
-%  \item \textbf{j\_within\_bin}: if junction is included  into a bin. This information is useful for the analysis of possible exintrons. 
-%\end{itemize}
-%\end{itemize} 
-%
-%
-%
-%%----------------------------------------%
-%\subsubsection*{Junctions metadata:}
-%The following junction dependant tables with their corresponding content are available (see Figure 3 a,b,c):
-%\begin{itemize}
-%\item \textbf{intron.pir}: event, e1i counts (J1), ie1 counts (J2), j\_within (J3), PIR by condition. J1, J2, J3 are the sum of junctions (J1, J2, J3) by condition.
-%  \[ PIR =\frac{J1+J2}{2*J3+(J1+J2)}\]
-%
-%\item \textbf{exon.altPSI}: event, J1 (start), J2 (end), J3 (exclusion), PSI. J1, J2, J3 are the sum of junctions (J1, J2, J3) by condition. \\
-%
-%\[ PSI(AltSS)=\frac{J1,2}{J1,2 +J3)}\]
-%
-%\item \textbf{exon.altES}: event, J1 (start), J2 (end), J3 (exclusion), PSI. J1, J2, J3 are the sum of junctions (J1, J2, J3) by condition. \\
-%
-%\[PSI(AltES)=\frac{J1 + J2 }{J1 + J2 +2*J3)}\]
-%
-%\item \textbf{junctions.pir}: This table is similar to \textbf{intron.pir} table. Contains PIR metric for each experimental junction using e1i and ie2 counts. Exclusion junction is the junction itself. This table helps to discover new introns as well as new retention events. Original data:
-%
-%\begin{itemize}
-%\item hitIntron: compares junction with annotated introns
-%\item hitIntronEvent: reports if the annotated intron is alternative or not
-%\end{itemize}
-%
-%\item \textbf{junctions.psi}: Given a junction, we can analyze if it shares start, end or both with another junction. If so, it indicates the existance of an alternative splicing event. Using strand information it is possible to classify those junctions into ALt5'SS, ALt3'SS or ES. Ratio between them along samples is reported.
-%\end{itemize}  
-%
-
 
 \subsection{Plots}
 \label{plots}
@@ -1384,9 +1305,9 @@ plotGenomicRegions( features, 'GENE02:E002' , genomeTxDb, targets,
 Figure \ref{fig:plotGenomicRegion} shows a plot from one of the previuos
 examples. 
 
-\begin{figure}
+\begin{figure}[ht!]
   \begin{center}
-  \includegraphics[width=0.6\textwidth]{images/GENE02_E002_gr.pdf}
+  \includegraphics[width=0.55\textwidth]{images/GENE02_E002_gr.pdf}
   \end{center}
   \caption{Genomic plot of a gene containing a exon skipping splicing event
   highlighted for four different conditions.}
@@ -1474,7 +1395,7 @@ contains barplots, and the other contains lines, they are selected automatically
 according to the number of conditions and values per condition. However, it is 
 possible to force to one of them.
 
-\begin{figure}
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=0.6\textwidth]{images/GENE02_E002_pr.pdf}
   \caption{Plots of bin gene, and junction counts, and PSI/PIR metric for a
@@ -1485,7 +1406,7 @@ possible to force to one of them.
   \label{fig:plotbinEx1} 
 \end{figure}
 
-\begin{figure}
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=0.25\textwidth]{images/GENE02_E002b_pr.pdf}
   \caption{Plots of bin gene, and junction counts, and PSI/PIR metric for a

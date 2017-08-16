@@ -2,7 +2,7 @@
 
 \alias{filterDU}
 
-\title{ Filtering ASpliDU objects}
+\title{Filtering ASpliDU objects}
 
 \description{
   ASpliDU object can be filtered to retain genes, bins or junction according to
@@ -10,44 +10,39 @@
 }
 
 \usage{ 
-  duFiltered <- ASpliDU( 
+  filterDU( 
     du , 
     what = c( 'genes','bins','junctions'),
     fdr = 1,
     logFC = 0,
-    absLocFC = TRUE,
+    absLogFC = TRUE,
     logFCgreater = TRUE
   )
 }
 
 \arguments{
-  \item{ du }{ 
+  \item{du}{ 
     An ASpliDU object }
-  \item{ what }{ 
+  \item{what}{ 
     A character vector that specifies the kind of features that will be 
     filtered. Accepted values are 'genes', 'bins', 'junctions'. Multiple values
     can be passed at the same time. The default value is c( 'genes','bins', 
     'junctions')}
-  \item{ fdr }{
+  \item{fdr}{
     A double value representing the maximum accepted value of fdr corrected 
     p-value to pass the filter. The default value is 1, the neutral value for 
     fdr filtering operation.  
   }
-  \item{ logFC }{
-    A double value representing the cut-off for accepted values of 
-    log-fold-change  to pass the filter. The default value is 0, the neutral 
-    value for logFC filtering operation if logFCgreater argument is TRUE.  
-  }
-  \item{ logFC }{
+  \item{logFC}{
     A double value representing the cut-off for accepted values of 
     log-fold-change  to pass the filter. The default value is 0, the neutral 
     value for logFC filtering operation if logFCgreater and absLocFC arguments 
     are both TRUE. 
   }
-  \item{ absLogFC }{ 
+  \item{absLogFC}{ 
     A logical value that specifies that the absolute value of log-fold-change 
     will be used in the filter operation. The default value is TRUE.}
-  \item{ logFCgreater }{ 
+  \item{logFCgreater}{ 
     A logical value that specifies that the log-fold-change value ( or 
     abs(log-fold-change) if absLogFC argument is TRUE) of features 
     must be greater than the cut-off value to pass the filter.
@@ -62,13 +57,14 @@
 }
 
 \author{
-  Estefania Mancini, Marcelo Yanovsky, Ariel Chernomoretz 
+  Estefania Mancini, Javier Iserte, Marcelo Yanovsky, Ariel Chernomoretz 
 }
 
 \examples{
 
  # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -91,21 +87,21 @@
                           maxISize = 50000 )
   
   # Calculate differential usage of junctions only 
-  du       <- DUReport( counts, targets )
+  du       <- DUreport( counts, targets )
   
   # Filter by FDR
-  duFiltered1 <- DUReport( du, what=c('genes','bins'), 
+  duFiltered1 <- filterDU( du, what=c('genes','bins'), 
      fdr = 0.01 )
 
 
   # Filter by logFC, only those that were up-regulated 
-  duFiltered2 <- DUReport( du, what=c('genes','bins'), 
+  duFiltered2 <- filterDU( du, what=c('genes','bins'), 
      logFC = log( 1.5, 2 ),  absLogFC = FALSE )
 
 }
 
 \seealso{
-  \code{\link{ DUreport }},
-  \code{\link{ junctionDUreport }},
-  \code{\link{ DUreportBinSplice }},
+  \code{\link{DUreport}},
+  \code{\link{junctionDUreport}},
+  \code{\link{DUreportBinSplice}},
 }

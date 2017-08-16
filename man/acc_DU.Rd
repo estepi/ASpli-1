@@ -1,8 +1,12 @@
-\name{ DU accesors }
-\alias{ genesDE }
-\alias{ binsDU }
-\alias{ junctionsDU }
-\title{ Accessors for ASpliDU object }
+\name{DU accessors}
+\alias{genesDE}
+\alias{genesDE<-}
+\alias{binsDU}
+\alias{binsDU<-}
+\alias{junctionsDU}
+\alias{junctionsDU<-}
+
+\title{Accessors for ASpliDU object}
 
 \description{ Accessors for ASpliDU object }
 \usage{ 
@@ -23,7 +27,7 @@
   
   # Get data tables from an ASpliDU object
   
-  du <- aspliDUexample()
+  du <- aspliDUexample1()
   
   gde <- genesDE( du )
   bdu <- binsDU( du )

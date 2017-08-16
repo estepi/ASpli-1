@@ -2,7 +2,7 @@
 
 \alias{mergeBinDUAS}
 
-\title{ Differential usage of bins and PSI/PIR. }
+\title{Differential usage of bins and PSI/PIR.}
 
 \description{ 
   This function merges the results of differential usage of bins, from an 
@@ -62,6 +62,7 @@
 
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -87,7 +88,7 @@
   counts <- readCounts( features, bams, targets, cores = 1, readLength = 100, 
                           maxISize = 50000 )
   
-  # Calculate differential usage of genes, bins and junctions 
+  # Calculate differential usage of genes and bins
   du <- DUreport( counts, targets , contrast = c(1,-1,-1,1))
   
   # Calculate PSI / PIR for bins and junction.

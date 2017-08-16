@@ -71,17 +71,17 @@
   
   du <- if ( is.null( appendTo ) ) new( Class = "ASpliDU" ) else appendTo
   
-  targets <- ASpli:::.condenseTargetsConditions( targets )
+  targets <- .condenseTargetsConditions( targets )
   
   df0 <- countsg(counts)
   
-  dfG0 <- ASpli:::.filterByReads(
+  dfG0 <- .filterByReads(
       df0 = df0,
       targets = targets,
       min = minGenReads,
       type = "all")
   
-  dfGen <- ASpli:::.filterByRdGen(
+  dfGen <- .filterByRdGen(
       df0 = dfG0,
       targets = targets,
       min = minRds,
@@ -89,7 +89,7 @@
   
   df0 <- countsj(counts)[countsj(counts)[,"gene"]%in%rownames(dfGen),]
   
-  df <- ASpli:::.filterJunctionBySample( df0 = df0, 
+  df <- .filterJunctionBySample( df0 = df0, 
       targets = targets, 
       threshold = threshold)  #mean > one of the condition
   
@@ -98,7 +98,7 @@
   if( offset ){
     
     warning( simpleWarning( "Junctions DU with offsets is not fully tested. Use results with caution") )
-    mOffset <- ASpli:::.getOffsetMatrix( 
+    mOffset <- .getOffsetMatrix( 
         df, 
         dfGen,
         targets,
@@ -141,7 +141,8 @@
     ignoreExternal = TRUE, 
     ignoreIo = TRUE, 
     ignoreI = FALSE,
-    filterWithContrasted = FALSE ) {
+    filterWithContrasted = FALSE,
+	verbose = TRUE) {
  
   # Create result object                   
   du <- new( Class="ASpliDU" )
@@ -151,13 +152,13 @@
   
   # Filter genes and calculates differential usage of genes
   du <- .DUreportGenes( du, counts, targets, minGenReads, minRds, contrast, 
-      forceGLM, filterWithContrasted )
+      forceGLM, filterWithContrasted, verbose = TRUE )
   message("Genes DE completed")
 
   # Filter bins and calculates differential usage of bins 
   du <- .DUReportBinsWithDiffSplice( counts, targets, contrast, du, minGenReads, 
-      minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI, filterWithContrasted
-          )
+      minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI, 
+	  filterWithContrasted )
   message("Bins DE completed")
   
   return( du )
@@ -253,14 +254,15 @@
 }
 
 .DUReportBinsWithDiffSplice <- function( counts, targets, contrast, du, 
-    minGenReads, minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI, filterWithContrasted ) {
+    minGenReads, minBinReads, minRds, ignoreExternal, ignoreIo, ignoreI, 
+	filterWithContrasted ) {
   
   # Filter bins
   countData <- .filterBins( counts, targets, minGenReads, minBinReads, minRds, 
       ignoreIo, contrast, filterWithContrasted )
 
-  binsdu <- .binsDUWithDiffSplice( countData[[2]], targets, contrast, ignoreExternal,
-      ignoreIo, ignoreI )  
+  binsdu <- .binsDUWithDiffSplice( countData[[2]], targets, contrast, 
+		  ignoreExternal, ignoreIo, ignoreI )  
   
   binsDU( du ) <- binsdu
   
@@ -635,11 +637,11 @@ return (dfBin)
   y <- DGEList( counts = .extractCountColumns( countData, targets ),
       group = factor( group, levels = getConditions(targets), ordered = TRUE) ,
       genes = .extractDataColumns(countData, targets) )       
-  
+
   # TODO: Este filtro es muy resctrictivos
   #  keep <- rowSums( cpm( y ) > 1) >= 2
   #  y <- y[ keep, , keep.lib.sizes = FALSE ]
-  y <- calcNormFactors( y )
+	y <- calcNormFactors( y )
   
   
   # model.matrix sort columns alphabetically if formula has characters instead 

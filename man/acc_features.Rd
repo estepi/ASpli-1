@@ -1,7 +1,10 @@
-\name{ features accesors }
-\alias{ featuresb }
-\alias{ featuresg }
-\alias{ featuresj }
+\name{Features accesors}
+\alias{featuresb}
+\alias{featuresg}
+\alias{featuresj}
+\alias{featuresb<-}
+\alias{featuresg<-}
+\alias{featuresj<-}
 
 \title{ Accessors for ASpliFeatures object }
 

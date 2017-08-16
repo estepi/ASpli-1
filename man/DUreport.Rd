@@ -19,13 +19,15 @@
             minBinReads = 5,
             minRds = 0.05, 
             offset = FALSE, 
-            offsetAggregateMode =  c( "geneMode", "binMode" )[2],
+            offsetAggregateMode =  c( "geneMode", "binMode" )[1],
             offsetUseFitGeneX = TRUE,
             contrast = NULL, 
             forceGLM = FALSE, 
             ignoreExternal = TRUE, 
             ignoreIo = TRUE, 
-            ignoreI = FALSE)
+            ignoreI = FALSE,
+            filterWithContrasted = FALSE,
+            verbose = FALSE)
 }
 
 \arguments{
@@ -33,7 +35,7 @@
     An object of class ASpliCounts
   }
   \item{ targets }{
-    A dataframe containing sample, bam and experimental factor columns.
+    A data.frame containing sample, bam and experimental factor columns.
   }
   \item{ minGenReads }{
     Genes with at least an average of \code{minGenReads} reads for any condition 
@@ -73,7 +75,7 @@
     \code{offsetAggregateMode} is 'binMode' a matrix from obtained from the sum
     of exonic bin counts, this only takes those bins that passes filters using 
     minGenReads, minBinReads and minRds.
-    Options:=c( “geneMode”, “binMode” )[ 2 ] },
+    Options:=c( "geneMode", "binMode" )[ 1 ] },
   \item{offsetUseFitGeneX}{ Default= TRUE } 
   \item{contrast}{ Define the comparison between conditions to be tested.
     \code{contrast} should be a vector with length equal to the number of 
@@ -88,6 +90,15 @@
     Default = NULL}
   \item{forceGLM}{ Force the use of a generalized linear model to estimate 
     differential expression and usage. Default = FALSE }
+  \item{filterWithContrasted}{
+    A logical value specifying if bins, genes and junction will be filtered by
+    read quantity and read density using data from those conditions that will 
+    be used in the comparison, i.e. those which coefficients in contrast 
+    argument are different from zero. The default value is FALSE, it is strongly
+    recommended to do not change this value.}
+  \item{verbose}{
+    A logical value that indicates that detailed information about each step in 
+    the analysis will be presented to the user. }
 }
 
 \value{ 
@@ -100,6 +111,7 @@
 \examples{
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -121,7 +133,7 @@
   counts   <- readCounts( features, bams, targets, cores = 1, readLength = 100, 
                           maxISize = 50000 )
   
-  # Calculate differential usage of genes, bins and junctions 
+  # Calculate differential usage of genes and bins
   du       <- DUreport( counts, targets )
 
   # Export results  
@@ -129,7 +141,7 @@
 }
 
 \seealso{
-  \code{\link{edgeR}}, \code{\link{junctionDUReport}}
+  \code{\link{edgeR}}, \code{\link{junctionDUreport}}
   Accessors: \code{\link{genesDE}}, \code{\link{binsDU}}
   Export: \code{ \link{writeDU} }
 }

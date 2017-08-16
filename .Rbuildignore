@@ -4,3 +4,7 @@ vignettes/binDefinition.png
 R/.gitignore
 vignettes/.gitignore
 .git
+man/plotTopTags.Rd
+R/plotTopTags_function.R
+vignettes/create_plotbin_example1_data.R
+vignettes/create_plotbin_example2_data.R

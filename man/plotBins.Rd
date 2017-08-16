@@ -30,7 +30,7 @@
             useHCColors     = FALSE,
             legendAtSide    = TRUE,
             outfolder       = NULL,
-            outfileType     = c('png','jpeg','tiff','pdf')[1],
+            outfileType     = c( 'png', 'bmp', 'jpeg', 'tiff', 'pdf')[1],
             deviceOpt       = NULL ) 
 }
 
@@ -86,7 +86,7 @@
   
   \item{las.x}{ Text orientation of x-axis labels. }
   
-  \item{use.HCColors}{ A logical value. If \code{TRUE} \code{panelTitleColors}} 
+  \item{useHCColors}{ A logical value. If \code{TRUE} \code{panelTitleColors}} 
     are not used, instead panel title are automatically chosen to have high 
     contrast against \code{colors}.
 
@@ -112,13 +112,14 @@
 }
 
 \seealso{
-  \code{\link{plotTopTags}}, 
+  \code{\link{plotGenomicRegions}}, 
 }
 
 \examples{
 
   # Create a transcript DB from gff/gtf annotation file.
   # Warnings in this examples can be ignored. 
+  library(GenomicFeatures)
   genomeTxDb <- makeTxDbFromGFF( system.file('extdata','genes.mini.gtf', 
                                  package="ASpli") )
   
@@ -146,7 +147,7 @@
   
   # Calculate differential usage of genes, bins and junctions 
   du       <- DUreport( counts, targets , contrast = c(1,-1,-1,1))
-  du       <- junctionDUReport( counts, targets, appendTo = du, contrast = c(1,-1,-1,1))
+  du       <- junctionDUreport( counts, targets, appendTo = du, contrast = c(1,-1,-1,1))
   
   # Calculate PSI / PIR for bins and junction.
   as       <- AsDiscover( counts, targets, features, bams, readLength = 100, 

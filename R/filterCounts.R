@@ -120,7 +120,7 @@
   
   targets <-.condenseTargetsConditions( targets )
   values <- .extractValuesToFilter( counts , type , what, targets )
-  values <- .evaluateByGrouping( values, quantifier,grouping, targets ) 
+  values <- .evaluateByGroup( values, quantifier,grouping, targets ) 
   filterMask <- .filterByGroup( values, filter , cutoffValue)
   
   if ( what == 'gene') {
