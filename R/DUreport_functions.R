@@ -371,13 +371,13 @@
   
   if (type=="any")  {
     if (verbose) message( paste("  Filtering any condition with mean minimum value",min) )    
-    filterefDF <- df0[ rowSums( list ) > 0             , ]
+    filteredDF <- df0[ rowSums( list ) > 0             , ]
   } else  {
     if (verbose) message( paste("  Filtering all conditions with mean minimum value",min) )    
-    filterefDF <- df0[ rowSums( list ) == length( contrastedConditions ) , ]
+    filteredDF <- df0[ rowSums( list ) == length( contrastedConditions ) , ]
   }
   
-  return (filterefDF)
+  return (filteredDF)
 }
 
 

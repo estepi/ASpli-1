@@ -531,7 +531,7 @@ setMethod(
     ) { 
       .DUreport( counts, targets, minGenReads, minBinReads, minRds, offset, 
           offsetAggregateMode, offsetUseFitGeneX, contrast, forceGLM,
-        ignoreExternal, ignoreIo, ignoreI )
+        ignoreExternal, ignoreIo, ignoreI, filterWithContrasted, verbose  )
   }
 )
 
