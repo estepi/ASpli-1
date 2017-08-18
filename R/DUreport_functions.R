@@ -462,6 +462,46 @@ return (dfBin)
 }
 
 # ---------------------------------------------------------------------------- #
+
+.normalizedBinCounts <- function( 
+    counts, 
+    targets, 
+    minGenReads = 10,
+    minBinReads = 5,
+    minRds = 0.05,
+    ignoreExternal = TRUE,
+    ignoreIo = TRUE,
+    ignoreI = FALSE,
+    verbose = TRUE ) {
+  
+  targets <- .condenseTargetsConditions( targets ) 
+  
+  filteringResult <- .filterBins(counts, targets, minGenReads, minBinReads, 
+      minRds, ignoreIo, NULL, FALSE, verbose )
+  dfGen <- filteringResult$genes
+  dfBin   <- filteringResult$bins
+  
+  if ( verbose ) message( "Extracting bin usage:")
+  
+  # -------------------------------------------------------------------------- #
+  # Filtrar bins de acuerdo de diferentes criterios
+  dfBin = dfBin[ ! ignoreExternal | dfBin$event != "external" ,] 
+  dfBin = dfBin[ ! ignoreIo | dfBin$feature != "Io" ,] 
+  dfBin = dfBin[ ! ignoreI | dfBin$feature != "I" ,] 
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Normalize bins by gen 
+  dfBin <- .normalizeByGenFeature( feature=dfBin, gene=dfGen, targets = targets, 
+        priorCounts = 0, verbose )
+  # -------------------------------------------------------------------------- #
+  
+  if ( verbose ) message( "Bin usage extraction done")
+  
+  return ( dfBin )
+  
+}
+
 .normalizeByGenFeature <- function( feature, gene, targets, priorCounts = 0,
     verbose = FALSE) {
 

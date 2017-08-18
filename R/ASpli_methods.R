@@ -788,6 +788,45 @@ setMethod(
 )
 # ---------------------------------------------------------------------------- # 
 
+# ---------------------------------------------------------------------------- #
+# normalizedBinCounts
+setGeneric(
+    name = "normalizedBinCounts",
+    def = function( 
+        counts, 
+        targets, 
+        minGenReads = 10,
+        minBinReads = 5,
+        minRds = 0.05,
+        ignoreExternal = TRUE,
+        ignoreIo = TRUE,
+        ignoreI = FALSE,
+        verbose = TRUE ) standardGeneric( 'normalizedBinCounts' ) )
+
+setMethod(
+    f = 'normalizedBinCounts',
+    signature = 'ASpliCounts',
+    definition = function(
+        counts, 
+        targets, 
+        minGenReads = 10,
+        minBinReads = 5,
+        minRds = 0.05,
+        ignoreExternal = TRUE,
+        ignoreIo = TRUE,
+        ignoreI = FALSE,
+        verbose = TRUE ) .normalizedBinCounts( counts, 
+          targets, 
+          minGenReads,
+          minBinReads,
+          minRds,
+          ignoreExternal,
+          ignoreIo,
+          ignoreI,
+          verbose )
+    )
+
+# ---------------------------------------------------------------------------- #
 
 
 
