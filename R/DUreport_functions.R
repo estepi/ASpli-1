@@ -469,6 +469,9 @@ return (dfBin)
     minGenReads = 10,
     minBinReads = 5,
     minRds = 0.05,
+    offset = FALSE,
+    offsetAggregateMode = c('geneMode','binMode')[1],
+    offsetUseFitGeneX = TRUE,
     ignoreExternal = TRUE,
     ignoreIo = TRUE,
     ignoreI = FALSE,
@@ -491,9 +494,90 @@ return (dfBin)
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
-  # Normalize bins by gen 
-  dfBin <- .normalizeByGenFeature( feature=dfBin, gene=dfGen, targets = targets, 
+  # Set offset matrix if required
+  if( offset ) {
+    if ( verbose ) message( "  Using an offset matrix")
+    mOffset <- .getOffsetMatrix(
+        df2,
+        dfGen,
+        targets,
+        offsetAggregateMode = offsetAggregateMode,
+        offsetUseFitGeneX   = offsetUseFitGeneX,
+        verbose)
+    mOffset <- mOffset[ rownames( df2 ), ]
+  } else {
+    mOffset <- NULL
+  }
+  # -------------------------------------------------------------------------- #
+  
+  # -------------------------------------------------------------------------- #
+  # Normalize bins by gen or filter offsets
+  if( is.null( mOffset ) ){
+    dfBin <- .normalizeByGenFeature( feature=dfBin, gene=dfGen, targets = targets, 
         priorCounts = 0, verbose )
+    return( dfBin)
+  } else {
+    
+    if (verbose) message("Running GLM LRT")
+    
+    mOffset <- mOffset[ rownames( dfBin ), ]
+    
+    cols <- match( rownames( targets ), colnames( dfBin ) )
+    
+    group <- targets$condition
+    
+    er <- DGEList( counts  = dfBin[,cols],
+        samples = targets,
+        group   = factor( group, levels = unique(group), ordered = TRUE ) )
+    
+    er <- calcNormFactors(er)
+    
+    if( ! is.null( mOffset ) ) er <- .setDefaultOffsets( er, mOffset ) 
+    
+    groupFactor <- factor( group, unique( group ), ordered = TRUE )
+    design     <- model.matrix( ~0 + groupFactor, data = er$samples )
+    captured <- capture.output(
+        er         <- estimateDisp( er, design = design ) 
+    )      
+    glf        <- glmFit( er, design = design )  
+    testResult <- glmLRT( glf, coef = c( 1:ncol(design) ) )
+    
+    return( testResult)
+    
+  }
+  # -------------------------------------------------------------------------- #
+  
+
+
+
+
+
+justTwoConditions <- sum( contrast != 0 ) == 2
+
+# TODO: Forzar GLM no tiene efecto si se pasa un offset. 
+if( ( !forceGLM ) & is.null( mOffset ) & justTwoConditions ){
+  
+  captured <- capture.output(
+      er   <- estimateDisp( er )
+  )
+  pair <- which( contrast != 0 )
+  testResult   <- exactTest( er, pair = pair )
+  
+#    message( "ExactTest... done" )
+  
+} else {
+  if (verbose) message("Running GLM LRT")
+  
+  if( ! is.null( mOffset ) ) er <- .setDefaultOffsets( er, mOffset ) 
+  
+  groupFactor <- factor( group, unique( group ), ordered = TRUE )
+  design     <- model.matrix( ~0 + groupFactor, data = er$samples )
+  captured <- capture.output(
+      er         <- estimateDisp( er, design = design ) 
+  )      
+  glf        <- glmFit( er, design = design )  
+  testResult <- glmLRT( glf, contrast = contrast )
+
   # -------------------------------------------------------------------------- #
   
   if ( verbose ) message( "Bin usage extraction done")
