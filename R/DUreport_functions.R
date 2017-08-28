@@ -498,13 +498,13 @@ return (dfBin)
   if( offset ) {
     if ( verbose ) message( "  Using an offset matrix")
     mOffset <- .getOffsetMatrix(
-        df2,
+        dfBin,
         dfGen,
         targets,
         offsetAggregateMode = offsetAggregateMode,
         offsetUseFitGeneX   = offsetUseFitGeneX,
         verbose)
-    mOffset <- mOffset[ rownames( df2 ), ]
+    mOffset <- mOffset[ rownames( dfBin ), ]
   } else {
     mOffset <- NULL
   }
@@ -524,7 +524,7 @@ return (dfBin)
     
     cols <- match( rownames( targets ), colnames( dfBin ) )
     
-    group <- targets$condition
+    group <- rownames(targets)
     
     er <- DGEList( counts  = dfBin[,cols],
         samples = targets,
@@ -536,53 +536,23 @@ return (dfBin)
     
     groupFactor <- factor( group, unique( group ), ordered = TRUE )
     design     <- model.matrix( ~0 + groupFactor, data = er$samples )
-    captured <- capture.output(
-        er         <- estimateDisp( er, design = design ) 
-    )      
-    glf        <- glmFit( er, design = design )  
+    glf        <- glmFit( er, design = design, dispersion=0)  
     testResult <- glmLRT( glf, coef = c( 1:ncol(design) ) )
     
-    return( testResult)
+    testResult <- testResult$table[1:length(unique(group))]
+    colnames( testResult ) <- unique(group)
+    
+    testResult <- testResult + log( 
+        .extractCountColumns( dfGen[ dfBin$locus, ], targets) , 2)
+    
+    testResult <- 2^(testResult)
+    
+    testResult <- cbind(.extractDataColumns( dfBin, targets ), testResult )    
+    
+    return( testResult  )
     
   }
   # -------------------------------------------------------------------------- #
-  
-
-
-
-
-
-justTwoConditions <- sum( contrast != 0 ) == 2
-
-# TODO: Forzar GLM no tiene efecto si se pasa un offset. 
-if( ( !forceGLM ) & is.null( mOffset ) & justTwoConditions ){
-  
-  captured <- capture.output(
-      er   <- estimateDisp( er )
-  )
-  pair <- which( contrast != 0 )
-  testResult   <- exactTest( er, pair = pair )
-  
-#    message( "ExactTest... done" )
-  
-} else {
-  if (verbose) message("Running GLM LRT")
-  
-  if( ! is.null( mOffset ) ) er <- .setDefaultOffsets( er, mOffset ) 
-  
-  groupFactor <- factor( group, unique( group ), ordered = TRUE )
-  design     <- model.matrix( ~0 + groupFactor, data = er$samples )
-  captured <- capture.output(
-      er         <- estimateDisp( er, design = design ) 
-  )      
-  glf        <- glmFit( er, design = design )  
-  testResult <- glmLRT( glf, contrast = contrast )
-
-  # -------------------------------------------------------------------------- #
-  
-  if ( verbose ) message( "Bin usage extraction done")
-  
-  return ( dfBin )
   
 }
 

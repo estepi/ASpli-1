@@ -56,7 +56,8 @@ exportMethods(
     "plotGenomicRegions",
     "subset",
     "mergeBinDUAS",
-    "filterDU"
+    "filterDU",
+    "normalizedBinCounts"
     
 )
 exportClasses(

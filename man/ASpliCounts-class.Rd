@@ -27,7 +27,7 @@
 \alias{writeAll,ASpliCounts-method}
 \alias{writeCounts,ASpliCounts-method}
 \alias{writeRds,ASpliCounts-method}
-
+\alias{normalizedBinCounts,ASpliCounts-method}
 
 \title{Class \code{"ASpliCounts"}}
 

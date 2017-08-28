@@ -16,6 +16,9 @@
         minGenReads = 10,
         minBinReads = 5,
         minRds = 0.05,
+        offset = FALSE,
+        offsetAggregateMode = c('geneMode','binMode')[1],
+        offsetUseFitGeneX = TRUE,        
         ignoreExternal = TRUE,
         ignoreIo = TRUE,
         ignoreI = FALSE,
@@ -50,6 +53,18 @@
     condition are included into the differential bin usage test.
     Default value is 0.05.
     }
+  \item{offset}{
+    Uses an offset to describe gene expression}
+  \item{offsetAggregateMode}{
+    Selects the method to build the offset matrix.
+    Permited values are 'geneMode' and 'binMode'. The default value is 
+    'geneMode'.
+  }
+  \item{offsetUseFitGeneX}{
+    If a 'geneMode' offset is selected, then this argument specifies that
+    a GLM will be used to estimate the offset matrix, instead of using 
+    raw counts.
+  }
   \item{ignoreExternal}{
     Ignore Exon Bins at the beginning or end of the transcript. 
     Default value is TRUE. }
