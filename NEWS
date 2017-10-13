@@ -1,6 +1,13 @@
 CHANGES IN VERSION 1.3.12
 -------------------------
 
+FEATURES
+
+    * Events named previously as 'as' are now names 'Undefined AS' for the sake 
+      of clarity.  
+      
+    * Enhancement to the vignettes.
+
 BUG FIXES
 
     * Added verbose and filterWithContrasted arguments to DUreport method.

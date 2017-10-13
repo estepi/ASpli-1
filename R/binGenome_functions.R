@@ -421,8 +421,8 @@
   # Add 'as' tag to alternative bins
   exon.as   <- rep( "-", length( exon.bins ) ) 
   intron.as <- rep( "-", length( intron.bins ) ) 
-  exon.as[ from( as.bins ) ] <- "as" 
-  intron.as[ to( as.bins ) ] <- "as" 
+  exon.as[ from( as.bins ) ] <- "Undefined AS" 
+  intron.as[ to( as.bins ) ] <- "Undefined AS" 
   # -------------------------------------------------------------------------- #
   
   # -------------------------------------------------------------------------- #
@@ -466,8 +466,8 @@
   # Add class information of neighbor bins.
   auxdf$classPrev <- .shiftVector(as.character(auxdf$class),1, default = '-')
   auxdf$classNext <- .shiftVector(as.character(auxdf$class),-1, default = '-')
-  isAS <- auxdf$class == 'as'
-  neighbourIsAS <- auxdf$classPrev =='as' | auxdf$classNext == 'as'
+  isAS <- auxdf$class == 'Undefined AS'
+  neighbourIsAS <- auxdf$classPrev =='Undefined AS' | auxdf$classNext == 'Undefined AS'
   # -------------------------------------------------------------------------- #
   
   
@@ -559,8 +559,8 @@
   
   # -------------------------------------------------------------------------- #
   # Count events by type.
-  AsNotExternal <- sum( intron.as == "as" )
-  totAS <- sum( auxdf$class == "as" )
+  AsNotExternal <- sum( intron.as == "Undefined AS" )
+  totAS <- sum( auxdf$class == "Undefined AS" )
   
   ES     <- sum( auxdf$events == "ES" )
   IR     <- sum( auxdf$events == "IR" )
